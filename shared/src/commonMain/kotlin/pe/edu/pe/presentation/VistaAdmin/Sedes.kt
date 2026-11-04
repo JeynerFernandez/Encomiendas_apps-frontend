@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,32 +20,42 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import pe.edu.pe.presentation.theme.* // Importante para usar los colores personalizados
+import org.koin.compose.viewmodel.koinViewModel
+import pe.edu.pe.presentation.theme.*
+import pe.edu.pe.presentation.viewmodel.SedeState
+import pe.edu.pe.presentation.viewmodel.SedeViewModel
 
 
 @Composable
 fun GestionSedesAdminContent(
-    onSalirClick: () -> Unit = {}
+    onSalirClick: () -> Unit = {},
+    viewModel: SedeViewModel = koinViewModel()
 ) {
 
-    // Texto utilizado para buscar una sede
+    // Estado que viene del ViewModel
+    val state by viewModel.state.collectAsState()
+
+    // Consulta las sedes cuando se abre la pantalla
+    LaunchedEffect(Unit) {
+        viewModel.getSedes()
+    }
+
     var textoBusqueda by remember {
         mutableStateOf("")
     }
 
-    // Controla el formulario de agregar o editar
     var mostrarFormulario by remember {
         mutableStateOf(false)
     }
 
-    var indiceEditar by remember {
-        mutableStateOf(-1)
+    // ID de la sede que se está editando
+    var sedeEditandoId by remember {
+        mutableStateOf<Int?>(null)
     }
 
-    // Datos ingresados en el formulario
     var nombreSede by remember {
         mutableStateOf("")
     }
@@ -53,15 +64,15 @@ fun GestionSedesAdminContent(
         mutableStateOf("")
     }
 
-    var responsable by remember {
+    var direccion by remember {
         mutableStateOf("")
     }
 
-    var usuario by remember {
+    var latitud by remember {
         mutableStateOf("")
     }
 
-    var contrasena by remember {
+    var longitud by remember {
         mutableStateOf("")
     }
 
@@ -69,94 +80,76 @@ fun GestionSedesAdminContent(
         mutableStateOf(true)
     }
 
-    // Muestra errores si algún campo obligatorio está vacío
     var mensajeError by remember {
         mutableStateOf("")
     }
 
 
-    /*
-     * [0] Nombre de sede
-     * [1] Ciudad
-     * [2] Responsable
-     * [3] Encomiendas activas
-     * [4] Estado
-     * [5] Usuario
-     * [6] Contraseña
-     */
-    val sedes = remember {
+    // Obtiene las sedes reales desde el backend
+    val sedes = when (
+        val currentState = state
+    ) {
 
-        mutableStateListOf(
+        is SedeState.Success -> {
+            currentState.sedes
+        }
 
-            listOf(
-                "Sede Central",
-                "Tarapoto",
-                "Jeyner Fernandez",
-                "7",
-                "Activa",
-                "rosa.tarapoto",
-                "123456"
-            ),
-
-            listOf(
-                "Sede Norte",
-                "Moyobamba",
-                "Jan Arevalo",
-                "2",
-                "Activa",
-                "ivan.moyobamba",
-                "123456"
-            ),
-
-            listOf(
-                "Sede Rioja",
-                "Rioja",
-                "Fernando Chumacero",
-                "3",
-                "Activa",
-                "carla.rioja",
-                "123456"
-            ),
-
-            listOf(
-                "Sede Nueva Cajamarca",
-                "Nueva Cajamarca",
-                "Antony ",
-                "1",
-                "Inactiva",
-                "",
-                ""
-            ),
-        )
+        else -> {
+            emptyList()
+        }
     }
 
 
-    // Filtra automáticamente mientras se escribe en el buscador
-    val sedesFiltradas = sedes.filter { sede ->
+    // Filtra sedes por nombre, ciudad o dirección
+    val sedesFiltradas =
+        sedes.filter { sede ->
 
-        textoBusqueda.isBlank() ||
+            textoBusqueda.isBlank() ||
 
-                sede[0].contains(
-                    textoBusqueda,
-                    ignoreCase = true
-                ) ||
+                    sede.name.contains(
+                        textoBusqueda,
+                        ignoreCase = true
+                    ) ||
 
-                sede[1].contains(
-                    textoBusqueda,
-                    ignoreCase = true
-                ) ||
+                    sede.city.contains(
+                        textoBusqueda,
+                        ignoreCase = true
+                    ) ||
 
-                sede[2].contains(
-                    textoBusqueda,
-                    ignoreCase = true
-                )
+                    sede.address.contains(
+                        textoBusqueda,
+                        ignoreCase = true
+                    )
+        }
+
+
+    // Limpia el formulario
+    fun limpiarFormulario() {
+
+        sedeEditandoId = null
+
+        nombreSede = ""
+
+        ciudad = ""
+
+        direccion = ""
+
+        latitud = ""
+
+        longitud = ""
+
+        sedeActiva = true
+
+        mensajeError = ""
     }
 
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(LightBackground) // Color de fondo claro (gris muy suave)
+            .background(
+                LightBackground
+            )
             .statusBarsPadding()
             .verticalScroll(
                 rememberScrollState()
@@ -166,89 +159,119 @@ fun GestionSedesAdminContent(
             )
     ) {
 
-        // Margen superior
         Spacer(
-            modifier = Modifier.height(10.dp)
+            modifier =
+                Modifier.height(10.dp)
         )
 
 
-        // Flecha para regresar al panel administrador
+        // Encabezado
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             IconButton(
-                onClick = onSalirClick,
-                modifier = Modifier.size(40.dp)
+                onClick =
+                    onSalirClick,
+
+                modifier =
+                    Modifier.size(40.dp)
             ) {
 
                 Icon(
                     imageVector =
-                        Icons.AutoMirrored.Filled.ArrowBack,
+                        Icons.AutoMirrored
+                            .Filled
+                            .ArrowBack,
 
-                    contentDescription = "Regresar",
+                    contentDescription =
+                        "Regresar",
 
-                    tint = Navy, // Color Azul Marino para el icono
+                    tint =
+                        Navy,
 
-                    modifier = Modifier.size(24.dp)
+                    modifier =
+                        Modifier.size(24.dp)
                 )
             }
 
 
             Spacer(
-                modifier = Modifier.width(8.dp)
+                modifier =
+                    Modifier.width(8.dp)
             )
 
 
             Column {
 
                 Text(
-                    text = "Administrador",
-                    fontSize = 12.sp,
-                    color = Muted // Color gris para el subtítulo
+                    text =
+                        "Administrador",
+
+                    fontSize =
+                        12.sp,
+
+                    color =
+                        Muted
                 )
 
+
                 Text(
-                    text = "Gestión de sedes",
-                    fontSize = 25.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink // Color oscuro para el título principal
+                    text =
+                        "Gestión de sedes",
+
+                    fontSize =
+                        25.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        Ink
                 )
             }
         }
 
 
-        // Separación del encabezado
         Spacer(
-            modifier = Modifier.height(15.dp)
+            modifier =
+                Modifier.height(15.dp)
         )
+
 
         HorizontalDivider(
-            color = Border // Color de borde sutil
+            color =
+                Border
         )
+
 
         Spacer(
-            modifier = Modifier.height(26.dp)
+            modifier =
+                Modifier.height(26.dp)
         )
 
 
-        // Buscador y botón para registrar una nueva sede
+        // Buscador y botón Nueva sede
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
+
             horizontalArrangement =
                 Arrangement.spacedBy(12.dp),
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
 
-            // Busca por nombre de sede, ciudad o responsable
             OutlinedTextField(
-                value = textoBusqueda,
+                value =
+                    textoBusqueda,
 
                 onValueChange = {
-
-                    // La tabla se actualiza conforme el usuario escribe
                     textoBusqueda = it
                 },
 
@@ -256,9 +279,13 @@ fun GestionSedesAdminContent(
                     Modifier.weight(1f),
 
                 placeholder = {
+
                     Text(
-                        "Buscar sede",
-                        color = Muted // Color gris para el placeholder
+                        text =
+                            "Buscar sede",
+
+                        color =
+                            Muted
                     )
                 },
 
@@ -270,51 +297,67 @@ fun GestionSedesAdminContent(
 
                         contentDescription =
                             "Buscar sede",
-                        tint = Muted // Color gris para el icono
+
+                        tint =
+                            Muted
                     )
                 },
 
-                singleLine = true,
+                singleLine =
+                    true,
 
                 shape =
-                    RoundedCornerShape(14.dp),
+                    RoundedCornerShape(
+                        14.dp
+                    ),
 
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Navy,
-                    unfocusedBorderColor = Border,
-                    focusedTextColor = Ink,
-                    unfocusedTextColor = Ink
-                )
+                colors =
+                    OutlinedTextFieldDefaults
+                        .colors(
+
+                            focusedBorderColor =
+                                Navy,
+
+                            unfocusedBorderColor =
+                                Border,
+
+                            focusedTextColor =
+                                Ink,
+
+                            unfocusedTextColor =
+                                Ink
+                        )
             )
 
 
-            // Abre el formulario para registrar una sede
             Button(
                 onClick = {
 
-                    indiceEditar = -1
+                    // Prepara el formulario para registrar una nueva sede
+                    limpiarFormulario()
 
-                    nombreSede = ""
-                    ciudad = ""
-                    responsable = ""
-                    usuario = ""
-                    contrasena = ""
-                    sedeActiva = true
-                    mensajeError = ""
-
-                    mostrarFormulario = true
+                    mostrarFormulario =
+                        true
                 },
 
-                modifier = Modifier.height(56.dp),
+                modifier =
+                    Modifier.height(56.dp),
 
                 shape =
-                    RoundedCornerShape(14.dp),
+                    RoundedCornerShape(
+                        14.dp
+                    ),
 
                 colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = Navy, // Fondo Azul Marino
-                        contentColor = Color.White // Texto blanco
-                    )
+                    ButtonDefaults
+                        .buttonColors(
+
+                            containerColor =
+                                Navy,
+
+                            contentColor =
+                                Color.White
+                        )
             ) {
 
                 Icon(
@@ -325,344 +368,538 @@ fun GestionSedesAdminContent(
                         "Nueva sede"
                 )
 
+
                 Spacer(
-                    modifier = Modifier.width(6.dp)
+                    modifier =
+                        Modifier.width(6.dp)
                 )
 
+
                 Text(
-                    text = "Nueva sede",
-                    fontWeight = FontWeight.Bold
+                    text =
+                        "Nueva sede",
+
+                    fontWeight =
+                        FontWeight.Bold
                 )
             }
         }
 
 
-        // Separación entre buscador y tabla
         Spacer(
-            modifier = Modifier.height(22.dp)
+            modifier =
+                Modifier.height(22.dp)
         )
 
 
-        // Permite visualizar la tabla en pantallas pequeñas
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(
-                    rememberScrollState()
-                )
+        // Muestra carga o error del backend
+        when (
+            val currentState = state
         ) {
 
-            Card(
-                modifier =
-                    Modifier.width(1000.dp),
+            is SedeState.Loading -> {
 
-                shape =
-                    RoundedCornerShape(16.dp),
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            vertical = 35.dp
+                        ),
 
-                border =
-                    BorderStroke(
-                        1.dp,
-                        Border // Color de borde sutil
-                    ),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
 
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = Surface // Fondo blanco
+                    CircularProgressIndicator(
+                        color =
+                            Navy
                     )
-            ) {
+                }
+            }
 
-                Column {
 
-                    // Encabezados de la tabla
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 14.dp,
-                                vertical = 14.dp
-                            ),
+            is SedeState.Error -> {
 
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                Card(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                Color(
+                                    0xFFFFEBEE
+                                )
+                        )
+                ) {
+
+                    Column(
+                        modifier =
+                            Modifier.padding(
+                                16.dp
+                            )
                     ) {
 
                         Text(
-                            text = "Sede",
-                            modifier =
-                                Modifier.weight(2f),
-                            fontSize = 13.sp,
-                            fontWeight =
-                                FontWeight.Bold,
-                            color = Muted // Color gris para encabezados
-                        )
+                            text =
+                                currentState.message,
 
-
-                        Text(
-                            text = "Ciudad",
-                            modifier =
-                                Modifier.weight(1.5f),
-                            fontSize = 13.sp,
-                            fontWeight =
-                                FontWeight.Bold,
-                            color = Muted // Color gris para encabezados
-                        )
-
-
-                        Text(
-                            text = "Responsable",
-                            modifier =
-                                Modifier.weight(1.7f),
-                            fontSize = 13.sp,
-                            fontWeight =
-                                FontWeight.Bold,
-                            color = Muted // Color gris para encabezados
-                        )
-
-
-                        Text(
-                            text = "Encomiendas activas",
-                            modifier =
-                                Modifier.weight(1.4f),
-                            fontSize = 13.sp,
-                            fontWeight =
-                                FontWeight.Bold,
-                            color = Muted // Color gris para encabezados
-                        )
-
-
-                        Text(
-                            text = "Estado",
-                            modifier =
-                                Modifier.weight(1.1f),
-                            fontSize = 13.sp,
-                            fontWeight =
-                                FontWeight.Bold,
-                            color = Muted // Color gris para encabezados
-                        )
-
-
-                        Text(
-                            text = "Editar",
-                            modifier =
-                                Modifier.weight(0.7f),
-                            fontSize = 13.sp,
-                            fontWeight =
-                                FontWeight.Bold,
-                            color = Muted // Color gris para encabezados
-                        )
-                    }
-
-
-                    HorizontalDivider(
-                        color = Border // Color de borde sutil
-                    )
-
-
-                    // Muestra todas las sedes que coinciden con la búsqueda
-                    sedesFiltradas.forEach { sede ->
-
-                        val indiceReal =
-                            sedes.indexOf(sede)
-
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    horizontal = 14.dp,
-                                    vertical = 14.dp
+                            color =
+                                Color(
+                                    0xFFE53935
                                 ),
+
+                            fontSize =
+                                14.sp
+                        )
+
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(
+                                    10.dp
+                                )
+                        )
+
+
+                        Button(
+                            onClick = {
+
+                                // Vuelve a consultar las sedes
+                                viewModel.getSedes()
+                            },
+
+                            colors =
+                                ButtonDefaults
+                                    .buttonColors(
+                                        containerColor =
+                                            Navy
+                                    )
+                        ) {
+
+                            Text(
+                                text =
+                                    "Reintentar"
+                            )
+                        }
+                    }
+                }
+            }
+
+
+            else -> Unit
+        }
+
+
+        // Tabla de sedes
+        if (
+            state is SedeState.Success
+        ) {
+
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(
+                            rememberScrollState()
+                        )
+            ) {
+
+                Card(
+                    modifier =
+                        Modifier.width(
+                            1000.dp
+                        ),
+
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+
+                    border =
+                        BorderStroke(
+                            1.dp,
+                            Border
+                        ),
+
+                    colors =
+                        CardDefaults
+                            .cardColors(
+                                containerColor =
+                                    Surface
+                            )
+                ) {
+
+                    Column {
+
+                        // Encabezados
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        horizontal =
+                                            14.dp,
+
+                                        vertical =
+                                            14.dp
+                                    ),
 
                             verticalAlignment =
                                 Alignment.CenterVertically
                         ) {
 
-
                             Text(
-                                text = sede[0],
+                                text =
+                                    "Sede",
 
                                 modifier =
-                                    Modifier.weight(2f),
+                                    Modifier.weight(
+                                        2f
+                                    ),
 
-                                fontSize = 14.sp,
+                                fontSize =
+                                    13.sp,
 
                                 fontWeight =
                                     FontWeight.Bold,
 
-                                color = Ink // Color oscuro para el nombre
+                                color =
+                                    Muted
                             )
 
-
-                            Text(
-                                text = sede[1],
-
-                                modifier =
-                                    Modifier.weight(1.5f),
-
-                                fontSize = 14.sp,
-
-                                color = Ink // Color oscuro para la ciudad
-                            )
-
-
-                            Text(
-                                text = sede[2],
-
-                                modifier =
-                                    Modifier.weight(1.7f),
-
-                                fontSize = 14.sp,
-
-                                color = Ink // Color oscuro para el responsable
-                            )
-
-
-                            Text(
-                                text = sede[3],
-
-                                modifier =
-                                    Modifier.weight(1.4f),
-
-                                fontSize = 14.sp,
-
-                                color = Ink // Color oscuro para el número
-                            )
-
-
-                            // Muestra si la sede está activa o inactiva
-                            Box(
-                                modifier =
-                                    Modifier.weight(1.1f)
-                            ) {
-
-                                val colorEstado =
-                                    if (
-                                        sede[4] == "Activa"
-                                    ) {
-                                        Color(0xFF279B57) // Verde para activa
-                                    } else {
-                                        Color(0xFFE53935) // Rojo para inactiva
-                                    }
-
-
-                                Box(
-                                    modifier = Modifier
-                                        .clip(
-                                            RoundedCornerShape(
-                                                20.dp
-                                            )
-                                        )
-                                        .background(
-                                            colorEstado.copy(
-                                                alpha = 0.12f
-                                            )
-                                        )
-                                        .padding(
-                                            horizontal = 12.dp,
-                                            vertical = 6.dp
-                                        )
-                                ) {
-
-                                    Text(
-                                        text = sede[4],
-                                        fontSize = 12.sp,
-                                        fontWeight =
-                                            FontWeight.SemiBold,
-                                        color =
-                                            colorEstado
-                                    )
-                                }
-                            }
-
-
-                            // Permite editar los datos de la sede
-                            Box(
-                                modifier =
-                                    Modifier.weight(0.7f)
-                            ) {
-
-                                IconButton(
-                                    onClick = {
-
-                                        indiceEditar =
-                                            indiceReal
-
-                                        nombreSede =
-                                            sede[0]
-
-                                        ciudad =
-                                            sede[1]
-
-                                        responsable =
-                                            if (
-                                                sede[2] ==
-                                                "— Sin asignar"
-                                            ) {
-                                                ""
-                                            } else {
-                                                sede[2]
-                                            }
-
-                                        usuario =
-                                            sede[5]
-
-                                        contrasena =
-                                            sede[6]
-
-                                        sedeActiva =
-                                            sede[4] ==
-                                                    "Activa"
-
-                                        mensajeError = ""
-
-                                        mostrarFormulario =
-                                            true
-                                    }
-                                ) {
-
-                                    Icon(
-                                        imageVector =
-                                            Icons.Default.Edit,
-
-                                        contentDescription =
-                                            "Editar sede",
-
-                                        tint = Navy // Color Azul Marino para el icono
-                                    )
-                                }
-                            }
-                        }
-
-
-                        // Separa visualmente cada sede
-                        HorizontalDivider(
-                            color = Border // Color de borde sutil
-                        )
-                    }
-
-
-                    // Mensaje cuando la búsqueda no encuentra resultados
-                    if (
-                        sedesFiltradas.isEmpty()
-                    ) {
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(35.dp),
-
-                            contentAlignment =
-                                Alignment.Center
-                        ) {
 
                             Text(
                                 text =
-                                    "No se encontraron sedes",
+                                    "Ciudad",
 
-                                fontSize = 14.sp,
+                                modifier =
+                                    Modifier.weight(
+                                        1.5f
+                                    ),
 
-                                color = Muted // Color gris para el mensaje
+                                fontSize =
+                                    13.sp,
+
+                                fontWeight =
+                                    FontWeight.Bold,
+
+                                color =
+                                    Muted
                             )
+
+
+                            Text(
+                                text =
+                                    "Dirección",
+
+                                modifier =
+                                    Modifier.weight(
+                                        2.5f
+                                    ),
+
+                                fontSize =
+                                    13.sp,
+
+                                fontWeight =
+                                    FontWeight.Bold,
+
+                                color =
+                                    Muted
+                            )
+
+
+                            Text(
+                                text =
+                                    "Estado",
+
+                                modifier =
+                                    Modifier.weight(
+                                        1.1f
+                                    ),
+
+                                fontSize =
+                                    13.sp,
+
+                                fontWeight =
+                                    FontWeight.Bold,
+
+                                color =
+                                    Muted
+                            )
+
+
+                            Text(
+                                text =
+                                    "Editar",
+
+                                modifier =
+                                    Modifier.weight(
+                                        0.7f
+                                    ),
+
+                                fontSize =
+                                    13.sp,
+
+                                fontWeight =
+                                    FontWeight.Bold,
+
+                                color =
+                                    Muted
+                            )
+                        }
+
+
+                        HorizontalDivider(
+                            color =
+                                Border
+                        )
+
+
+                        // Recorre las sedes recibidas desde MySQL
+                        sedesFiltradas.forEach {
+                                sede ->
+
+
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            horizontal =
+                                                14.dp,
+
+                                            vertical =
+                                                14.dp
+                                        ),
+
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+
+
+                                Text(
+                                    text =
+                                        sede.name,
+
+                                    modifier =
+                                        Modifier.weight(
+                                            2f
+                                        ),
+
+                                    fontSize =
+                                        14.sp,
+
+                                    fontWeight =
+                                        FontWeight.Bold,
+
+                                    color =
+                                        Ink
+                                )
+
+
+                                Text(
+                                    text =
+                                        sede.city,
+
+                                    modifier =
+                                        Modifier.weight(
+                                            1.5f
+                                        ),
+
+                                    fontSize =
+                                        14.sp,
+
+                                    color =
+                                        Ink
+                                )
+
+
+                                Text(
+                                    text =
+                                        sede.address,
+
+                                    modifier =
+                                        Modifier.weight(
+                                            2.5f
+                                        ),
+
+                                    fontSize =
+                                        14.sp,
+
+                                    color =
+                                        Ink
+                                )
+
+
+                                // Estado de la sede
+                                Box(
+                                    modifier =
+                                        Modifier.weight(
+                                            1.1f
+                                        )
+                                ) {
+
+                                    val colorEstado =
+                                        if (
+                                            sede.active
+                                        ) {
+
+                                            Color(
+                                                0xFF279B57
+                                            )
+
+                                        } else {
+
+                                            Color(
+                                                0xFFE53935
+                                            )
+                                        }
+
+
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .clip(
+                                                    RoundedCornerShape(
+                                                        20.dp
+                                                    )
+                                                )
+                                                .background(
+                                                    colorEstado
+                                                        .copy(
+                                                            alpha =
+                                                                0.12f
+                                                        )
+                                                )
+                                                .padding(
+                                                    horizontal =
+                                                        12.dp,
+
+                                                    vertical =
+                                                        6.dp
+                                                )
+                                    ) {
+
+                                        Text(
+                                            text =
+                                                if (
+                                                    sede.active
+                                                ) {
+
+                                                    "Activa"
+
+                                                } else {
+
+                                                    "Inactiva"
+                                                },
+
+                                            fontSize =
+                                                12.sp,
+
+                                            fontWeight =
+                                                FontWeight
+                                                    .SemiBold,
+
+                                            color =
+                                                colorEstado
+                                        )
+                                    }
+                                }
+
+
+                                // Abre la sede para editarla
+                                Box(
+                                    modifier =
+                                        Modifier.weight(
+                                            0.7f
+                                        )
+                                ) {
+
+                                    IconButton(
+                                        onClick = {
+
+                                            sedeEditandoId =
+                                                sede.id
+
+                                            nombreSede =
+                                                sede.name
+
+                                            ciudad =
+                                                sede.city
+
+                                            direccion =
+                                                sede.address
+
+                                            latitud =
+                                                sede.latitude
+                                                    .toString()
+
+                                            longitud =
+                                                sede.longitude
+                                                    .toString()
+
+                                            sedeActiva =
+                                                sede.active
+
+                                            mensajeError =
+                                                ""
+
+                                            mostrarFormulario =
+                                                true
+                                        }
+                                    ) {
+
+                                        Icon(
+                                            imageVector =
+                                                Icons.Default.Edit,
+
+                                            contentDescription =
+                                                "Editar sede",
+
+                                            tint =
+                                                Navy
+                                        )
+                                    }
+                                }
+                            }
+
+
+                            HorizontalDivider(
+                                color =
+                                    Border
+                            )
+                        }
+
+
+                        if (
+                            sedesFiltradas
+                                .isEmpty()
+                        ) {
+
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            35.dp
+                                        ),
+
+                                contentAlignment =
+                                    Alignment.Center
+                            ) {
+
+                                Text(
+                                    text =
+                                        "No se encontraron sedes",
+
+                                    fontSize =
+                                        14.sp,
+
+                                    color =
+                                        Muted
+                                )
+                            }
                         }
                     }
                 }
@@ -671,51 +908,71 @@ fun GestionSedesAdminContent(
 
 
         Spacer(
-            modifier = Modifier.height(32.dp)
+            modifier =
+                Modifier.height(
+                    32.dp
+                )
         )
     }
 
 
-    // Formulario utilizado para agregar o editar una sede
-    if (mostrarFormulario) {
+    // Formulario para crear o editar una sede
+    if (
+        mostrarFormulario
+    ) {
 
         AlertDialog(
 
             onDismissRequest = {
-                mostrarFormulario = false
+
+                mostrarFormulario =
+                    false
             },
+
 
             title = {
 
                 Text(
                     text =
-                        if (indiceEditar == -1)
+                        if (
+                            sedeEditandoId == null
+                        ) {
+
                             "Nueva sede"
-                        else
-                            "Editar sede",
+
+                        } else {
+
+                            "Editar sede"
+                        },
 
                     fontWeight =
                         FontWeight.Bold,
-                    color = Ink // Color oscuro para el título
+
+                    color =
+                        Ink
                 )
             },
+
 
             text = {
 
                 Column(
-                    modifier = Modifier
-                        .verticalScroll(
-                            rememberScrollState()
-                        ),
+                    modifier =
+                        Modifier
+                            .verticalScroll(
+                                rememberScrollState()
+                            ),
 
                     verticalArrangement =
-                        Arrangement.spacedBy(12.dp)
+                        Arrangement.spacedBy(
+                            12.dp
+                        )
                 ) {
 
 
-                    // Nombre que tendrá la sede
                     OutlinedTextField(
-                        value = nombreSede,
+                        value =
+                            nombreSede,
 
                         onValueChange = {
                             nombreSede = it
@@ -725,23 +982,19 @@ fun GestionSedesAdminContent(
                             Modifier.fillMaxWidth(),
 
                         label = {
-                            Text("Nombre de sede")
+                            Text(
+                                "Nombre de sede"
+                            )
                         },
 
-                        singleLine = true,
-
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Navy,
-                            unfocusedBorderColor = Border,
-                            focusedTextColor = Ink,
-                            unfocusedTextColor = Ink
-                        )
+                        singleLine =
+                            true
                     )
 
 
-                    // Ciudad donde funcionará la sede
                     OutlinedTextField(
-                        value = ciudad,
+                        value =
+                            ciudad,
 
                         onValueChange = {
                             ciudad = it
@@ -751,115 +1004,94 @@ fun GestionSedesAdminContent(
                             Modifier.fillMaxWidth(),
 
                         label = {
-                            Text("Ciudad")
+                            Text(
+                                "Ciudad"
+                            )
                         },
 
-                        singleLine = true,
-
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Navy,
-                            unfocusedBorderColor = Border,
-                            focusedTextColor = Ink,
-                            unfocusedTextColor = Ink
-                        )
+                        singleLine =
+                            true
                     )
 
 
-                    // Persona encargada de la sede
                     OutlinedTextField(
-                        value = responsable,
+                        value =
+                            direccion,
 
                         onValueChange = {
-                            responsable = it
+                            direccion = it
                         },
 
                         modifier =
                             Modifier.fillMaxWidth(),
 
                         label = {
-                            Text("Responsable")
+                            Text(
+                                "Dirección"
+                            )
                         },
 
-                        singleLine = true,
-
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Navy,
-                            unfocusedBorderColor = Border,
-                            focusedTextColor = Ink,
-                            unfocusedTextColor = Ink
-                        )
+                        singleLine =
+                            true
                     )
 
 
-                    HorizontalDivider(
-                        color = Border // Color de borde sutil
-                    )
-
-
-                    Text(
-                        text = "Credenciales de acceso",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Navy // Color Azul Marino para el subtítulo
-                    )
-
-
-                    // Usuario utilizado para iniciar sesión
                     OutlinedTextField(
-                        value = usuario,
+                        value =
+                            latitud,
 
                         onValueChange = {
-                            usuario = it
+                            latitud = it
                         },
 
                         modifier =
                             Modifier.fillMaxWidth(),
 
                         label = {
-                            Text("Usuario")
+                            Text(
+                                "Latitud"
+                            )
                         },
 
-                        singleLine = true,
+                        singleLine =
+                            true,
 
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Navy,
-                            unfocusedBorderColor = Border,
-                            focusedTextColor = Ink,
-                            unfocusedTextColor = Ink
-                        )
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType =
+                                    KeyboardType.Decimal
+                            )
                     )
 
 
-                    // Contraseña asignada a la sede
                     OutlinedTextField(
-                        value = contrasena,
+                        value =
+                            longitud,
 
                         onValueChange = {
-                            contrasena = it
+                            longitud = it
                         },
 
                         modifier =
                             Modifier.fillMaxWidth(),
 
                         label = {
-                            Text("Contraseña")
+                            Text(
+                                "Longitud"
+                            )
                         },
 
-                        singleLine = true,
+                        singleLine =
+                            true,
 
-                        visualTransformation =
-                            PasswordVisualTransformation(),
-
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Navy,
-                            unfocusedBorderColor = Border,
-                            focusedTextColor = Ink,
-                            unfocusedTextColor = Ink
-                        )
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType =
+                                    KeyboardType.Decimal
+                            )
                     )
 
 
-                    // Permite activar o desactivar la sede
                     Row(
                         modifier =
                             Modifier.fillMaxWidth(),
@@ -872,12 +1104,19 @@ fun GestionSedesAdminContent(
                     ) {
 
                         Text(
-                            text = "Sede activa",
-                            fontSize = 14.sp,
+                            text =
+                                "Sede activa",
+
+                            fontSize =
+                                14.sp,
+
                             fontWeight =
                                 FontWeight.Medium,
-                            color = Ink // Color oscuro para el texto
+
+                            color =
+                                Ink
                         )
+
 
                         Switch(
                             checked =
@@ -887,127 +1126,179 @@ fun GestionSedesAdminContent(
                                 sedeActiva = it
                             },
 
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = Navy,
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Muted
-                            )
+                            colors =
+                                SwitchDefaults
+                                    .colors(
+
+                                        checkedThumbColor =
+                                            Color.White,
+
+                                        checkedTrackColor =
+                                            Navy,
+
+                                        uncheckedThumbColor =
+                                            Color.White,
+
+                                        uncheckedTrackColor =
+                                            Muted
+                                    )
                         )
                     }
 
 
-                    // Muestra un mensaje si faltan datos
                     if (
-                        mensajeError.isNotBlank()
+                        mensajeError
+                            .isNotBlank()
                     ) {
 
                         Text(
-                            text = mensajeError,
-                            color = Color(0xFFE53935), // Rojo para errores
-                            fontSize = 12.sp
+                            text =
+                                mensajeError,
+
+                            color =
+                                Color(
+                                    0xFFE53935
+                                ),
+
+                            fontSize =
+                                12.sp
                         )
                     }
                 }
             },
 
+
             confirmButton = {
 
                 Button(
+
                     onClick = {
 
-                        // Valida los campos antes de guardar
+                        // Valida que todos los campos estén completos
                         if (
                             nombreSede.isBlank() ||
                             ciudad.isBlank() ||
-                            responsable.isBlank() ||
-                            usuario.isBlank() ||
-                            contrasena.isBlank()
+                            direccion.isBlank() ||
+                            latitud.isBlank() ||
+                            longitud.isBlank()
                         ) {
 
                             mensajeError =
                                 "Completa todos los campos"
 
-                        } else {
-
-                            val estado =
-                                if (sedeActiva)
-                                    "Activa"
-                                else
-                                    "Inactiva"
-
-
-                            if (indiceEditar == -1) {
-
-                                // Al agregar, la nueva sede aparece inmediatamente en la tabla
-                                sedes.add(
-
-                                    listOf(
-                                        nombreSede.trim(),
-                                        ciudad.trim(),
-                                        responsable.trim(),
-
-                                        // Una sede nueva inicia sin encomiendas activas
-                                        "0",
-
-                                        estado,
-                                        usuario.trim(),
-                                        contrasena
-                                    )
-                                )
-
-                            } else {
-
-                                // Actualiza la sede seleccionada conservando sus encomiendas
-                                val encomiendasActivas =
-                                    sedes[indiceEditar][3]
-
-
-                                sedes[indiceEditar] =
-
-                                    listOf(
-                                        nombreSede.trim(),
-                                        ciudad.trim(),
-                                        responsable.trim(),
-                                        encomiendasActivas,
-                                        estado,
-                                        usuario.trim(),
-                                        contrasena
-                                    )
-                            }
-
-
-                            mostrarFormulario = false
+                            return@Button
                         }
+
+
+                        // Convierte las coordenadas a Double
+                        val latitudNumero =
+                            latitud.toDoubleOrNull()
+
+                        val longitudNumero =
+                            longitud.toDoubleOrNull()
+
+
+                        if (
+                            latitudNumero == null ||
+                            longitudNumero == null
+                        ) {
+
+                            mensajeError =
+                                "Latitud y longitud deben ser números"
+
+                            return@Button
+                        }
+
+
+                        // Crea o actualiza la sede dependiendo del ID
+                        viewModel.saveSede(
+
+                            id =
+                                sedeEditandoId,
+
+                            name =
+                                nombreSede.trim(),
+
+                            city =
+                                ciudad.trim(),
+
+                            address =
+                                direccion.trim(),
+
+                            latitude =
+                                latitudNumero,
+
+                            longitude =
+                                longitudNumero,
+
+                            active =
+                                sedeActiva,
+
+                            onSuccess = {
+
+                                mensajeError =
+                                    ""
+
+                                mostrarFormulario =
+                                    false
+
+                                limpiarFormulario()
+                            },
+
+                            onError = { error ->
+
+                                mensajeError =
+                                    error
+                            }
+                        )
                     },
 
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Navy, // Fondo Azul Marino
-                        contentColor = Color.White // Texto blanco
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+
+                            containerColor =
+                                Navy,
+
+                            contentColor =
+                                Color.White
+                        )
                 ) {
 
                     Text(
                         text =
-                            if (indiceEditar == -1)
+                            if (
+                                sedeEditandoId == null
+                            ) {
+
                                 "Agregar"
-                            else
+
+                            } else {
+
                                 "Guardar"
+                            }
                     )
                 }
             },
+
 
             dismissButton = {
 
                 TextButton(
                     onClick = {
-                        mostrarFormulario = false
+
+                        mostrarFormulario =
+                            false
+
+                        limpiarFormulario()
                     }
                 ) {
 
                     Text(
-                        "Cancelar",
-                        color = Navy // Color Azul Marino para el botón cancelar
+                        text =
+                            "Cancelar",
+
+                        color =
+                            Navy
                     )
                 }
             }

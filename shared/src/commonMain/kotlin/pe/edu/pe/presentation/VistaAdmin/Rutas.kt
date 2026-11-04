@@ -3,7 +3,18 @@ package pe.edu.pe.presentation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -13,1291 +24,2157 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import pe.edu.pe.presentation.theme.* // Importante para usar los colores personalizados
+import pe.edu.pe.domain.model.Ruta
+import pe.edu.pe.domain.model.Sede
+import pe.edu.pe.presentation.theme.Border
+import pe.edu.pe.presentation.theme.Ink
+import pe.edu.pe.presentation.theme.LightBackground
+import pe.edu.pe.presentation.theme.Muted
+import pe.edu.pe.presentation.theme.Navy
+import pe.edu.pe.presentation.theme.NavySoft
+import pe.edu.pe.presentation.theme.Surface
+import pe.edu.pe.presentation.viewmodel.RutaViewModel
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalMaterial3Api::class
+)
 @Composable
 fun GestionRutasAdminContent(
-
-    onSalirClick: () -> Unit = {},
-
-    // Aquí llegan las sedes registradas en Gestión de sedes
-    sedesDisponibles: List<String> = listOf(
-        "Tarapoto",
-        "Moyobamba",
-        "Rioja",
-        "Nueva Cajamarca",
-        "Pomacochas",
-        "Pedro Ruiz",
-        "Bagua Grande"
-    )
+    viewModel: RutaViewModel,
+    onSalirClick: () -> Unit = {}
 ) {
 
-    // Texto utilizado para buscar rutas
-    var textoBusqueda by remember {
-        mutableStateOf("")
-    }
+    val uiState by
+    viewModel.uiState
+        .collectAsState()
 
-    // Controla el formulario de agregar o editar
-    var mostrarFormulario by remember {
-        mutableStateOf(false)
-    }
-
-    // -1 significa que se está agregando una ruta nueva
-    var indiceEditar by remember {
-        mutableStateOf(-1)
-    }
-
-
-    // Datos del formulario
-    var origenSeleccionado by remember {
-        mutableStateOf("")
-    }
-
-    var destinoSeleccionado by remember {
-        mutableStateOf("")
-    }
-
-    // Guarda las paradas intermedias
-    val paradasIntermedias = remember {
-        mutableStateListOf<String>()
-    }
-
-    // Controla los desplegables
-    var origenExpandido by remember {
-        mutableStateOf(false)
-    }
-
-    var destinoExpandido by remember {
-        mutableStateOf(false)
-    }
-
-    var paradaExpandida by remember {
-        mutableStateOf(-1)
-    }
-
-    // Muestra errores de validación
-    var mensajeError by remember {
-        mutableStateOf("")
-    }
-
-
-    /*
-     * [0] Origen
-     * [1] Destino
-     * [2] Paradas intermedias
-     * [3] Encomiendas activas
-     */
-    val rutas = remember {
-
-        mutableStateListOf(
-
-            listOf(
-                "Tarapoto",
-                "Nueva Cajamarca",
-                "Moyobamba|Rioja",
-                "1"
-            ),
-
-            listOf(
-                "Tarapoto",
-                "Bagua Grande",
-                "Pedro Ruiz",
-                "0"
-            ),
-
-            listOf(
-                "Tarapoto",
-                "Pomacochas",
-                "",
-                "1"
-            )
+    var origenExpandido by
+    remember {
+        mutableStateOf(
+            false
         )
     }
 
-
-    // Busca rutas mientras el administrador escribe
-    val rutasFiltradas = rutas.filter { ruta ->
-
-        val paradas = ruta[2]
-            .replace("|", " ")
-
-        textoBusqueda.isBlank() ||
-
-                ruta[0].contains(
-                    textoBusqueda,
-                    ignoreCase = true
-                ) ||
-
-                ruta[1].contains(
-                    textoBusqueda,
-                    ignoreCase = true
-                ) ||
-
-                paradas.contains(
-                    textoBusqueda,
-                    ignoreCase = true
-                )
+    var destinoExpandido by
+    remember {
+        mutableStateOf(
+            false
+        )
     }
 
+    var paradaExpandida by
+    remember {
+        mutableIntStateOf(
+            -1
+        )
+    }
+
+    val rutasFiltradas =
+        viewModel
+            .obtenerRutasFiltradas()
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(LightBackground) // Color de fondo claro (gris muy suave)
-            .statusBarsPadding()
-            .verticalScroll(
-                rememberScrollState()
-            )
-            .padding(
-                horizontal = 18.dp
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    LightBackground
+                )
+                .statusBarsPadding()
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(
+                    horizontal = 18.dp
+                )
     ) {
 
-        // Margen superior
         Spacer(
-            modifier = Modifier.height(10.dp)
+            modifier =
+                Modifier.height(
+                    10.dp
+                )
         )
 
-
-        // Flecha para regresar al panel administrador
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            IconButton(
-                onClick = onSalirClick,
-                modifier = Modifier.size(40.dp)
-            ) {
-
-                Icon(
-                    imageVector =
-                        Icons.AutoMirrored.Filled.ArrowBack,
-
-                    contentDescription = "Regresar",
-
-                    tint = Navy, // Color Azul Marino para el icono
-
-                    modifier =
-                        Modifier.size(24.dp)
-                )
-            }
-
-
-            Spacer(
-                modifier = Modifier.width(8.dp)
-            )
-
-
-            Column {
-
-                Text(
-                    text = "Administrador",
-                    fontSize = 12.sp,
-                    color = Muted // Color gris para el subtítulo
-                )
-
-                Text(
-                    text = "Gestión de rutas",
-                    fontSize = 25.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink // Color oscuro para el título principal
-                )
-            }
-        }
-
-
-        // Separación del encabezado
-        Spacer(
-            modifier = Modifier.height(15.dp)
-        )
-
-        HorizontalDivider(
-            color = Border // Color de borde sutil
-        )
-
-        Spacer(
-            modifier = Modifier.height(26.dp)
-        )
-
-
-        // Buscador y botón para crear una ruta
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-
-            horizontalArrangement =
-                Arrangement.spacedBy(12.dp),
-
+            modifier =
+                Modifier.fillMaxWidth(),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
 
-            // Busca por origen, destino o paradas
-            OutlinedTextField(
-                value = textoBusqueda,
-
-                onValueChange = {
-
-                    // La lista cambia mientras se escribe
-                    textoBusqueda = it
-                },
-
+            IconButton(
+                onClick =
+                    onSalirClick,
                 modifier =
-                    Modifier.weight(1f),
+                    Modifier.size(
+                        40.dp
+                    )
+            ) {
 
+                Icon(
+                    imageVector =
+                        Icons.AutoMirrored
+                            .Filled
+                            .ArrowBack,
+                    contentDescription =
+                        "Regresar",
+                    tint =
+                        Navy,
+                    modifier =
+                        Modifier.size(
+                            24.dp
+                        )
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.width(
+                        8.dp
+                    )
+            )
+
+            Column {
+
+                Text(
+                    text =
+                        "Administrador",
+                    fontSize =
+                        12.sp,
+                    color =
+                        Muted
+                )
+
+                Text(
+                    text =
+                        "Gestión de rutas",
+                    fontSize =
+                        25.sp,
+                    fontWeight =
+                        FontWeight.Bold,
+                    color =
+                        Ink
+                )
+            }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    15.dp
+                )
+        )
+
+        HorizontalDivider(
+            color =
+                Border
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    26.dp
+                )
+        )
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    12.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            OutlinedTextField(
+                value =
+                    uiState.textoBusqueda,
+                onValueChange = { texto ->
+
+                    viewModel
+                        .cambiarBusqueda(
+                            texto
+                        )
+                },
+                modifier =
+                    Modifier.weight(
+                        1f
+                    ),
                 placeholder = {
+
                     Text(
-                        "Buscar ruta",
-                        color = Muted // Color gris para el placeholder
+                        text =
+                            "Buscar ruta",
+                        color =
+                            Muted
                     )
                 },
-
                 leadingIcon = {
 
                     Icon(
                         imageVector =
                             Icons.Default.Search,
-
                         contentDescription =
                             "Buscar ruta",
-                        tint = Muted // Color gris para el icono
+                        tint =
+                            Muted
                     )
                 },
-
-                singleLine = true,
-
+                singleLine =
+                    true,
                 shape =
-                    RoundedCornerShape(14.dp),
-
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Navy,
-                    unfocusedBorderColor = Border,
-                    focusedTextColor = Ink,
-                    unfocusedTextColor = Ink
-                )
+                    RoundedCornerShape(
+                        14.dp
+                    ),
+                colors =
+                    OutlinedTextFieldDefaults
+                        .colors(
+                            focusedBorderColor =
+                                Navy,
+                            unfocusedBorderColor =
+                                Border,
+                            focusedTextColor =
+                                Ink,
+                            unfocusedTextColor =
+                                Ink
+                        )
             )
 
-
-            // Abre el formulario para una nueva ruta
             Button(
                 onClick = {
 
-                    indiceEditar = -1
+                    if (
+                        !uiState.guardando
+                    ) {
 
-                    origenSeleccionado = ""
-                    destinoSeleccionado = ""
+                        origenExpandido =
+                            false
 
-                    paradasIntermedias.clear()
+                        destinoExpandido =
+                            false
 
-                    mensajeError = ""
+                        paradaExpandida =
+                            -1
 
-                    mostrarFormulario = true
+                        viewModel
+                            .abrirNuevaRuta()
+                    }
                 },
-
+                enabled =
+                    !uiState.guardando,
                 modifier =
-                    Modifier.height(56.dp),
-
+                    Modifier.height(
+                        56.dp
+                    ),
                 shape =
-                    RoundedCornerShape(14.dp),
-
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Navy, // Fondo Azul Marino
-                    contentColor = Color.White // Texto blanco
-                )
+                    RoundedCornerShape(
+                        14.dp
+                    ),
+                colors =
+                    ButtonDefaults
+                        .buttonColors(
+                            containerColor =
+                                Navy,
+                            contentColor =
+                                Color.White
+                        )
             ) {
 
                 Icon(
                     imageVector =
                         Icons.Default.Add,
-
                     contentDescription =
                         "Nueva ruta"
                 )
 
                 Spacer(
-                    modifier = Modifier.width(6.dp)
+                    modifier =
+                        Modifier.width(
+                            6.dp
+                        )
                 )
 
                 Text(
-                    text = "Nueva ruta",
-                    fontWeight = FontWeight.Bold
+                    text =
+                        "Nueva ruta",
+                    fontWeight =
+                        FontWeight.Bold
                 )
             }
         }
 
-
-        // Separación entre buscador y tabla
         Spacer(
-            modifier = Modifier.height(22.dp)
+            modifier =
+                Modifier.height(
+                    18.dp
+                )
         )
 
+        val mensaje =
+            uiState.mensaje
 
-        // Permite mover la tabla en pantallas pequeñas
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(
-                    rememberScrollState()
-                )
+        if (
+            mensaje != null
         ) {
 
-            Card(
+            MensajeRuta(
+                texto =
+                    mensaje,
+                esError =
+                    false,
+                onCerrar = {
+
+                    viewModel
+                        .limpiarMensaje()
+                }
+            )
+
+            Spacer(
                 modifier =
-                    Modifier.width(950.dp),
-
-                shape =
-                    RoundedCornerShape(16.dp),
-
-                border =
-                    BorderStroke(
-                        1.dp,
-                        Border // Color de borde sutil
-                    ),
-
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = Surface // Fondo blanco
+                    Modifier.height(
+                        12.dp
                     )
+            )
+        }
+
+        val error =
+            uiState.error
+
+        if (
+            error != null &&
+            !uiState.mostrarFormulario
+        ) {
+
+            MensajeRuta(
+                texto =
+                    error,
+                esError =
+                    true,
+                onCerrar = {
+
+                    viewModel
+                        .limpiarMensaje()
+                }
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        12.dp
+                    )
+            )
+        }
+
+        if (
+            uiState.isLoading
+        ) {
+
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            vertical = 60.dp
+                        ),
+                contentAlignment =
+                    Alignment.Center
             ) {
 
-                Column {
+                CircularProgressIndicator(
+                    color =
+                        Navy
+                )
+            }
 
-                    // Encabezados de la tabla
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 14.dp,
-                                vertical = 14.dp
-                            ),
+        } else {
 
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
-
-                        Text(
-                            text = "Ruta",
-
-                            modifier =
-                                Modifier.weight(3f),
-
-                            fontSize = 13.sp,
-
-                            fontWeight =
-                                FontWeight.Bold,
-
-                            color = Muted // Color gris para encabezados
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(
+                            rememberScrollState()
                         )
+            ) {
 
+                Card(
+                    modifier =
+                        Modifier.width(
+                            980.dp
+                        ),
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+                    border =
+                        BorderStroke(
+                            width =
+                                1.dp,
+                            color =
+                                Border
+                        ),
+                    colors =
+                        CardDefaults
+                            .cardColors(
+                                containerColor =
+                                    Surface
+                            )
+                ) {
 
-                        Text(
-                            text = "Paradas",
-
-                            modifier =
-                                Modifier.weight(1.8f),
-
-                            fontSize = 13.sp,
-
-                            fontWeight =
-                                FontWeight.Bold,
-
-                            color = Muted // Color gris para encabezados
-                        )
-
-
-                        Text(
-                            text = "Encomiendas activas",
-
-                            modifier =
-                                Modifier.weight(1.3f),
-
-                            fontSize = 13.sp,
-
-                            fontWeight =
-                                FontWeight.Bold,
-
-                            color = Muted // Color gris para encabezados
-                        )
-
-
-                        Text(
-                            text = "Editar",
-
-                            modifier =
-                                Modifier.weight(0.6f),
-
-                            fontSize = 13.sp,
-
-                            fontWeight =
-                                FontWeight.Bold,
-
-                            color = Muted // Color gris para encabezados
-                        )
-                    }
-
-
-                    HorizontalDivider(
-                        color = Border // Color de borde sutil
-                    )
-
-
-                    // Muestra las rutas encontradas
-                    rutasFiltradas.forEach { ruta ->
-
-                        val indiceReal =
-                            rutas.indexOf(ruta)
-
-
-                        // Convierte las paradas guardadas en una lista
-                        val paradas =
-                            if (ruta[2].isBlank()) {
-                                emptyList()
-                            } else {
-                                ruta[2].split("|")
-                            }
-
-
-                        // Construye la ruta completa
-                        val rutaCompleta =
-                            buildList {
-
-                                add(ruta[0])
-
-                                addAll(paradas)
-
-                                add(ruta[1])
-                            }
-                                //De lista, converte a colecion de un solo texto
-                                .joinToString(" → ")
-
+                    Column {
 
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    horizontal = 14.dp,
-                                    vertical = 14.dp
-                                ),
-
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        horizontal =
+                                            14.dp,
+                                        vertical =
+                                            14.dp
+                                    ),
                             verticalAlignment =
                                 Alignment.CenterVertically
                         ) {
 
-
-                            // Muestra origen, paradas y destino
-                            Text(
-                                text = rutaCompleta,
-
-                                modifier =
-                                    Modifier.weight(3f),
-
-                                fontSize = 14.sp,
-
-                                fontWeight =
-                                    FontWeight.Bold,
-
-                                color = Ink // Color oscuro para la ruta
-                            )
-
-
-                            // Muestra únicamente las paradas intermedias
                             Text(
                                 text =
-                                    if (paradas.isEmpty()) {
-                                        "—"
-                                    } else {
-                                        paradas.joinToString(", ")
-                                    },
-
+                                    "Ruta",
                                 modifier =
-                                    Modifier.weight(1.8f),
-
-                                fontSize = 14.sp,
-
-                                color = Ink // Color oscuro para las paradas
+                                    Modifier.weight(
+                                        3.2f
+                                    ),
+                                fontSize =
+                                    13.sp,
+                                fontWeight =
+                                    FontWeight.Bold,
+                                color =
+                                    Muted
                             )
-
 
                             Text(
-                                text = ruta[3],
-
+                                text =
+                                    "Paradas",
                                 modifier =
-                                    Modifier.weight(1.3f),
-
-                                fontSize = 14.sp,
-
-                                color = Ink // Color oscuro para el número
+                                    Modifier.weight(
+                                        2.2f
+                                    ),
+                                fontSize =
+                                    13.sp,
+                                fontWeight =
+                                    FontWeight.Bold,
+                                color =
+                                    Muted
                             )
 
+                            Text(
+                                text =
+                                    "Estado",
+                                modifier =
+                                    Modifier.weight(
+                                        1.1f
+                                    ),
+                                fontSize =
+                                    13.sp,
+                                fontWeight =
+                                    FontWeight.Bold,
+                                color =
+                                    Muted
+                            )
 
-                            // Permite editar una ruta existente
+                            Text(
+                                text =
+                                    "Editar",
+                                modifier =
+                                    Modifier.weight(
+                                        0.7f
+                                    ),
+                                fontSize =
+                                    13.sp,
+                                fontWeight =
+                                    FontWeight.Bold,
+                                color =
+                                    Muted,
+                                textAlign =
+                                    TextAlign.Center
+                            )
+                        }
+
+                        HorizontalDivider(
+                            color =
+                                Border
+                        )
+
+                        if (
+                            rutasFiltradas
+                                .isEmpty()
+                        ) {
+
                             Box(
                                 modifier =
-                                    Modifier.weight(0.6f)
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            40.dp
+                                        ),
+                                contentAlignment =
+                                    Alignment.Center
                             ) {
 
-                                IconButton(
-                                    onClick = {
-
-                                        indiceEditar =
-                                            indiceReal
-
-
-                                        // Carga el origen actual
-                                        origenSeleccionado =
-                                            ruta[0]
-
-
-                                        // Carga el destino actual
-                                        destinoSeleccionado =
-                                            ruta[1]
-
-
-                                        // Carga las paradas existentes
-                                        paradasIntermedias.clear()
-
-                                        if (
-                                            ruta[2].isNotBlank()
-                                        ) {
-
-                                            paradasIntermedias.addAll(
-                                                ruta[2].split("|")
-                                            )
-                                        }
-
-
-                                        mensajeError = ""
-
-                                        mostrarFormulario =
-                                            true
-                                    }
+                                Column(
+                                    horizontalAlignment =
+                                        Alignment.CenterHorizontally
                                 ) {
 
                                     Icon(
                                         imageVector =
-                                            Icons.Default.Edit,
-
+                                            Icons.Default.Route,
                                         contentDescription =
-                                            "Editar ruta",
+                                            null,
+                                        tint =
+                                            Muted,
+                                        modifier =
+                                            Modifier.size(
+                                                38.dp
+                                            )
+                                    )
 
-                                        tint = Navy // Color Azul Marino para el icono
+                                    Spacer(
+                                        modifier =
+                                            Modifier.height(
+                                                10.dp
+                                            )
+                                    )
+
+                                    Text(
+                                        text =
+                                            "No se encontraron rutas",
+                                        fontSize =
+                                            14.sp,
+                                        color =
+                                            Muted
                                     )
                                 }
                             }
-                        }
 
+                        } else {
 
-                        // Separa una ruta de la siguiente
-                        HorizontalDivider(
-                            color = Border // Color de borde sutil
-                        )
-                    }
+                            for (
+                            ruta in rutasFiltradas
+                            ) {
 
+                                RutaFila(
+                                    ruta =
+                                        ruta,
+                                    onEditar = {
 
-                    // Mensaje cuando no existen coincidencias
-                    if (rutasFiltradas.isEmpty()) {
+                                        origenExpandido =
+                                            false
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(35.dp),
+                                        destinoExpandido =
+                                            false
 
-                            contentAlignment =
-                                Alignment.Center
-                        ) {
+                                        paradaExpandida =
+                                            -1
 
-                            Text(
-                                text =
-                                    "No se encontraron rutas",
+                                        viewModel
+                                            .abrirEditarRuta(
+                                                ruta
+                                            )
+                                    }
+                                )
 
-                                fontSize = 14.sp,
-
-                                color = Muted // Color gris para el mensaje
-                            )
+                                HorizontalDivider(
+                                    color =
+                                        Border
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-
         Spacer(
-            modifier = Modifier.height(32.dp)
+            modifier =
+                Modifier.height(
+                    32.dp
+                )
         )
     }
 
+    if (
+        uiState.mostrarFormulario
+    ) {
 
-    // Formulario para agregar o editar rutas
-    if (mostrarFormulario) {
+        val origenNombre =
+            obtenerNombreSede(
+                sedes =
+                    uiState.sedes,
+                sedeId =
+                    uiState.origenId
+            )
+
+        val destinoNombre =
+            obtenerNombreSede(
+                sedes =
+                    uiState.sedes,
+                sedeId =
+                    uiState.destinoId
+            )
+
+        val editando =
+            uiState.rutaEditandoId !=
+                    null
 
         AlertDialog(
-
             onDismissRequest = {
-                mostrarFormulario = false
+
+                if (
+                    !uiState.guardando
+                ) {
+
+                    origenExpandido =
+                        false
+
+                    destinoExpandido =
+                        false
+
+                    paradaExpandida =
+                        -1
+
+                    viewModel
+                        .cerrarFormulario()
+                }
             },
-
-
             title = {
 
                 Text(
                     text =
-                        if (indiceEditar == -1) {
-                            "Nueva ruta"
-                        } else {
+                        if (
+                            editando
+                        ) {
                             "Editar ruta"
+                        } else {
+                            "Nueva ruta"
                         },
-
                     fontWeight =
                         FontWeight.Bold,
-                    color = Ink // Color oscuro para el título
+                    color =
+                        Ink
                 )
             },
-
-
             text = {
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(
-                            rememberScrollState()
-                        ),
-
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(
+                                rememberScrollState()
+                            ),
                     verticalArrangement =
-                        Arrangement.spacedBy(14.dp)
+                        Arrangement.spacedBy(
+                            14.dp
+                        )
                 ) {
 
-
-                    // Selecciona la sede de origen
                     Text(
-                        text = "Ruta origen",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink // Color oscuro para el subtítulo
+                        text =
+                            "Ruta origen",
+                        fontSize =
+                            14.sp,
+                        fontWeight =
+                            FontWeight.Bold,
+                        color =
+                            Ink
                     )
-
 
                     ExposedDropdownMenuBox(
                         expanded =
                             origenExpandido,
-
                         onExpandedChange = {
-                            origenExpandido =
-                                !origenExpandido
+
+                            if (
+                                !uiState.guardando
+                            ) {
+
+                                origenExpandido =
+                                    !origenExpandido
+
+                                destinoExpandido =
+                                    false
+
+                                paradaExpandida =
+                                    -1
+                            }
                         }
                     ) {
 
                         OutlinedTextField(
                             value =
-                                origenSeleccionado,
-
+                                origenNombre,
                             onValueChange = {},
-
-                            readOnly = true,
-
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-
+                            readOnly =
+                                true,
+                            enabled =
+                                !uiState.guardando,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
                             placeholder = {
+
                                 Text(
-                                    "Selecciona sede",
-                                    color = Muted // Color gris para el placeholder
+                                    text =
+                                        "Selecciona sede",
+                                    color =
+                                        Muted
                                 )
                             },
-
                             trailingIcon = {
 
-                                Icon(
-                                    imageVector =
-                                        Icons.Default
-                                            .ArrowDropDown,
-
-                                    contentDescription =
-                                        "Origen",
-                                    tint = Muted // Color gris para el icono
-                                )
+                                ExposedDropdownMenuDefaults
+                                    .TrailingIcon(
+                                        expanded =
+                                            origenExpandido
+                                    )
                             },
-
+                            singleLine =
+                                true,
                             shape =
-                                RoundedCornerShape(12.dp),
-
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Navy,
-                                unfocusedBorderColor = Border,
-                                focusedTextColor = Ink,
-                                unfocusedTextColor = Ink
-                            )
+                                RoundedCornerShape(
+                                    12.dp
+                                ),
+                            colors =
+                                OutlinedTextFieldDefaults
+                                    .colors(
+                                        focusedBorderColor =
+                                            Navy,
+                                        unfocusedBorderColor =
+                                            Border,
+                                        focusedTextColor =
+                                            Ink,
+                                        unfocusedTextColor =
+                                            Ink
+                                    )
                         )
-
 
                         ExposedDropdownMenu(
                             expanded =
                                 origenExpandido,
-
                             onDismissRequest = {
-                                origenExpandido = false
+
+                                origenExpandido =
+                                    false
                             }
                         ) {
 
-                            // Usa las sedes registradas en Gestión de sedes
-                            sedesDisponibles.forEach { sede ->
+                            for (
+                            sede in uiState.sedes
+                            ) {
+
+                                val habilitada =
+                                    sedeDisponible(
+                                        sedeId =
+                                            sede.id,
+                                        origenId =
+                                            uiState.origenId,
+                                        destinoId =
+                                            uiState.destinoId,
+                                        paradas =
+                                            uiState.paradasIds,
+                                        posicion =
+                                            -1
+                                    )
 
                                 DropdownMenuItem(
-
                                     text = {
-                                        Text(sede)
-                                    },
 
+                                        Text(
+                                            text =
+                                                sede.name
+                                        )
+                                    },
+                                    enabled =
+                                        habilitada ||
+                                                uiState.origenId ==
+                                                sede.id,
                                     onClick = {
 
-                                        origenSeleccionado =
-                                            sede
+                                        if (
+                                            habilitada ||
+                                            uiState.origenId ==
+                                            sede.id
+                                        ) {
 
-                                        origenExpandido =
-                                            false
+                                            viewModel
+                                                .seleccionarOrigen(
+                                                    sede.id
+                                                )
+
+                                            origenExpandido =
+                                                false
+                                        }
                                     }
                                 )
                             }
                         }
                     }
 
-
-                    // Muestra las paradas intermedias
                     Text(
-                        text = "Paradas intermedias",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink // Color oscuro para el subtítulo
+                        text =
+                            "Paradas intermedias",
+                        fontSize =
+                            14.sp,
+                        fontWeight =
+                            FontWeight.Bold,
+                        color =
+                            Ink
                     )
 
+                    if (
+                        uiState.paradasIds
+                            .isEmpty()
+                    ) {
 
-                    if (paradasIntermedias.isEmpty()) {
-
-                        // Se muestra cuando la ruta no tiene paradas
                         Surface(
                             modifier =
                                 Modifier.fillMaxWidth(),
-
                             shape =
-                                RoundedCornerShape(10.dp),
-
-                            color = NavySoft // Fondo azul marino suave para el aviso
+                                RoundedCornerShape(
+                                    10.dp
+                                ),
+                            color =
+                                NavySoft
                         ) {
 
                             Text(
                                 text =
-                                    "Sin paradas intermedias. La ruta será directa origen → destino.",
-
+                                    "Sin paradas intermedias. La ruta será directa.",
                                 modifier =
-                                    Modifier.padding(14.dp),
-
-                                fontSize = 13.sp,
-
-                                color = Navy // Color Azul Marino para el texto
+                                    Modifier.padding(
+                                        14.dp
+                                    ),
+                                fontSize =
+                                    13.sp,
+                                color =
+                                    Navy
                             )
                         }
                     }
 
+                    var indice =
+                        0
 
-                    // Muestra cada parada agregada
-                    paradasIntermedias.forEachIndexed { index, parada ->
+                    while (
+                        indice <
+                        uiState.paradasIds.size
+                    ) {
+
+                        val paradaId =
+                            uiState.paradasIds[
+                                indice
+                            ]
+
+                        val paradaNombre =
+                            obtenerNombreSede(
+                                sedes =
+                                    uiState.sedes,
+                                sedeId =
+                                    paradaId
+                            )
+
+                        val indiceActual =
+                            indice
 
                         Row(
                             modifier =
                                 Modifier.fillMaxWidth(),
-
                             verticalAlignment =
                                 Alignment.CenterVertically,
-
                             horizontalArrangement =
-                                Arrangement.spacedBy(8.dp)
+                                Arrangement.spacedBy(
+                                    8.dp
+                                )
                         ) {
 
-
-                            // Número de orden de la parada
                             Surface(
                                 shape =
-                                    RoundedCornerShape(20.dp),
-
-                                color = NavySoft // Fondo azul marino suave
+                                    RoundedCornerShape(
+                                        20.dp
+                                    ),
+                                color =
+                                    NavySoft
                             ) {
 
                                 Text(
                                     text =
-                                        "${index + 1}",
-
+                                        "${indice + 2}",
                                     modifier =
                                         Modifier.padding(
-                                            horizontal = 10.dp,
-                                            vertical = 7.dp
+                                            horizontal =
+                                                10.dp,
+                                            vertical =
+                                                7.dp
                                         ),
-
                                     fontWeight =
                                         FontWeight.Bold,
-
-                                    color = Navy // Color Azul Marino
+                                    color =
+                                        Navy
                                 )
                             }
 
-
-                            // Selector de la parada
                             ExposedDropdownMenuBox(
                                 expanded =
-                                    paradaExpandida == index,
-
+                                    paradaExpandida ==
+                                            indice,
                                 onExpandedChange = {
 
-                                    paradaExpandida =
+                                    if (
+                                        !uiState.guardando
+                                    ) {
+
                                         if (
                                             paradaExpandida ==
-                                            index
+                                            indice
                                         ) {
-                                            -1
-                                        } else {
-                                            index
-                                        }
-                                },
 
+                                            paradaExpandida =
+                                                -1
+
+                                        } else {
+
+                                            paradaExpandida =
+                                                indice
+                                        }
+
+                                        origenExpandido =
+                                            false
+
+                                        destinoExpandido =
+                                            false
+                                    }
+                                },
                                 modifier =
-                                    Modifier.weight(1f)
+                                    Modifier.weight(
+                                        1f
+                                    )
                             ) {
 
                                 OutlinedTextField(
                                     value =
-                                        parada,
-
+                                        paradaNombre,
                                     onValueChange = {},
-
-                                    readOnly = true,
-
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .menuAnchor(),
-
+                                    readOnly =
+                                        true,
+                                    enabled =
+                                        !uiState.guardando,
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .menuAnchor(),
                                     placeholder = {
+
                                         Text(
-                                            "Selecciona sede",
-                                            color = Muted // Color gris para el placeholder
+                                            text =
+                                                "Selecciona sede",
+                                            color =
+                                                Muted
                                         )
                                     },
-
                                     trailingIcon = {
 
                                         Icon(
                                             imageVector =
                                                 Icons.Default
                                                     .ArrowDropDown,
-
                                             contentDescription =
                                                 "Parada",
-                                            tint = Muted // Color gris para el icono
+                                            tint =
+                                                Muted
                                         )
                                     },
-
-                                    singleLine = true,
-
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Navy,
-                                        unfocusedBorderColor = Border,
-                                        focusedTextColor = Ink,
-                                        unfocusedTextColor = Ink
-                                    )
+                                    singleLine =
+                                        true,
+                                    shape =
+                                        RoundedCornerShape(
+                                            12.dp
+                                        ),
+                                    colors =
+                                        OutlinedTextFieldDefaults
+                                            .colors(
+                                                focusedBorderColor =
+                                                    Navy,
+                                                unfocusedBorderColor =
+                                                    Border,
+                                                focusedTextColor =
+                                                    Ink,
+                                                unfocusedTextColor =
+                                                    Ink
+                                            )
                                 )
-
 
                                 ExposedDropdownMenu(
                                     expanded =
                                         paradaExpandida ==
-                                                index,
-
+                                                indice,
                                     onDismissRequest = {
+
                                         paradaExpandida =
                                             -1
                                     }
                                 ) {
 
-                                    // Muestra las sedes disponibles
-                                    sedesDisponibles.forEach { sede ->
+                                    for (
+                                    sede in uiState.sedes
+                                    ) {
+
+                                        val habilitada =
+                                            sedeDisponible(
+                                                sedeId =
+                                                    sede.id,
+                                                origenId =
+                                                    uiState.origenId,
+                                                destinoId =
+                                                    uiState.destinoId,
+                                                paradas =
+                                                    uiState.paradasIds,
+                                                posicion =
+                                                    indiceActual
+                                            )
 
                                         DropdownMenuItem(
-
                                             text = {
-                                                Text(sede)
-                                            },
 
+                                                Text(
+                                                    text =
+                                                        sede.name
+                                                )
+                                            },
+                                            enabled =
+                                                habilitada ||
+                                                        paradaId ==
+                                                        sede.id,
                                             onClick = {
 
-                                                // Cambia la sede seleccionada para esta parada
-                                                paradasIntermedias[index] =
-                                                    sede
+                                                if (
+                                                    habilitada ||
+                                                    paradaId ==
+                                                    sede.id
+                                                ) {
 
-                                                paradaExpandida =
-                                                    -1
+                                                    viewModel
+                                                        .seleccionarParada(
+                                                            index =
+                                                                indiceActual,
+                                                            sedeId =
+                                                                sede.id
+                                                        )
+
+                                                    paradaExpandida =
+                                                        -1
+                                                }
                                             }
                                         )
                                     }
                                 }
                             }
 
-
-                            // Elimina una parada intermedia
                             IconButton(
                                 onClick = {
 
-                                    paradasIntermedias.removeAt(
-                                        index
-                                    )
-                                }
+                                    if (
+                                        !uiState.guardando
+                                    ) {
+
+                                        viewModel
+                                            .eliminarParada(
+                                                indiceActual
+                                            )
+
+                                        paradaExpandida =
+                                            -1
+                                    }
+                                },
+                                enabled =
+                                    !uiState.guardando
                             ) {
 
                                 Icon(
                                     imageVector =
                                         Icons.Default.Delete,
-
                                     contentDescription =
                                         "Eliminar parada",
-
-                                    tint = Color(0xFFE53935) // Rojo para el icono de eliminar
+                                    tint =
+                                        Color(
+                                            0xFFE53935
+                                        )
                                 )
                             }
                         }
+
+                        indice++
                     }
 
-
-                    // Agrega una nueva parada intermedia
                     OutlinedButton(
                         onClick = {
 
-                            paradasIntermedias.add("")
-                        },
+                            if (
+                                !uiState.guardando
+                            ) {
 
+                                viewModel
+                                    .agregarParada()
+
+                                paradaExpandida =
+                                    -1
+                            }
+                        },
+                        enabled =
+                            !uiState.guardando &&
+                                    uiState.sedes.size >
+                                    uiState.paradasIds.size + 2,
                         modifier =
                             Modifier.fillMaxWidth(),
-
                         shape =
-                            RoundedCornerShape(12.dp),
-
-                        border = BorderStroke(1.dp, Navy), // Borde Azul Marino
-
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Navy // Texto Azul Marino
-                        )
+                            RoundedCornerShape(
+                                12.dp
+                            ),
+                        border =
+                            BorderStroke(
+                                width =
+                                    1.dp,
+                                color =
+                                    Navy
+                            ),
+                        colors =
+                            ButtonDefaults
+                                .outlinedButtonColors(
+                                    contentColor =
+                                        Navy
+                                )
                     ) {
 
                         Icon(
                             imageVector =
                                 Icons.Default.Add,
-
                             contentDescription =
                                 null
                         )
 
                         Spacer(
                             modifier =
-                                Modifier.width(6.dp)
+                                Modifier.width(
+                                    6.dp
+                                )
                         )
 
                         Text(
                             text =
                                 "Agregar parada intermedia",
-
                             fontWeight =
                                 FontWeight.Bold
                         )
                     }
 
-
-                    // Selecciona la sede final de la ruta
                     Text(
-                        text = "Ruta destino",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink // Color oscuro para el subtítulo
+                        text =
+                            "Ruta destino",
+                        fontSize =
+                            14.sp,
+                        fontWeight =
+                            FontWeight.Bold,
+                        color =
+                            Ink
                     )
-
 
                     ExposedDropdownMenuBox(
                         expanded =
                             destinoExpandido,
-
                         onExpandedChange = {
-                            destinoExpandido =
-                                !destinoExpandido
+
+                            if (
+                                !uiState.guardando
+                            ) {
+
+                                destinoExpandido =
+                                    !destinoExpandido
+
+                                origenExpandido =
+                                    false
+
+                                paradaExpandida =
+                                    -1
+                            }
                         }
                     ) {
 
                         OutlinedTextField(
                             value =
-                                destinoSeleccionado,
-
+                                destinoNombre,
                             onValueChange = {},
-
-                            readOnly = true,
-
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-
+                            readOnly =
+                                true,
+                            enabled =
+                                !uiState.guardando,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
                             placeholder = {
+
                                 Text(
-                                    "Selecciona sede",
-                                    color = Muted // Color gris para el placeholder
+                                    text =
+                                        "Selecciona sede",
+                                    color =
+                                        Muted
                                 )
                             },
-
                             trailingIcon = {
 
-                                Icon(
-                                    imageVector =
-                                        Icons.Default
-                                            .ArrowDropDown,
-
-                                    contentDescription =
-                                        "Destino",
-                                    tint = Muted // Color gris para el icono
-                                )
+                                ExposedDropdownMenuDefaults
+                                    .TrailingIcon(
+                                        expanded =
+                                            destinoExpandido
+                                    )
                             },
-
+                            singleLine =
+                                true,
                             shape =
-                                RoundedCornerShape(12.dp),
-
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Navy,
-                                unfocusedBorderColor = Border,
-                                focusedTextColor = Ink,
-                                unfocusedTextColor = Ink
-                            )
+                                RoundedCornerShape(
+                                    12.dp
+                                ),
+                            colors =
+                                OutlinedTextFieldDefaults
+                                    .colors(
+                                        focusedBorderColor =
+                                            Navy,
+                                        unfocusedBorderColor =
+                                            Border,
+                                        focusedTextColor =
+                                            Ink,
+                                        unfocusedTextColor =
+                                            Ink
+                                    )
                         )
-
 
                         ExposedDropdownMenu(
                             expanded =
                                 destinoExpandido,
-
                             onDismissRequest = {
-                                destinoExpandido = false
+
+                                destinoExpandido =
+                                    false
                             }
                         ) {
 
-                            // Usa las mismas sedes registradas
-                            sedesDisponibles.forEach { sede ->
+                            for (
+                            sede in uiState.sedes
+                            ) {
+
+                                val habilitada =
+                                    sedeDisponible(
+                                        sedeId =
+                                            sede.id,
+                                        origenId =
+                                            uiState.origenId,
+                                        destinoId =
+                                            uiState.destinoId,
+                                        paradas =
+                                            uiState.paradasIds,
+                                        posicion =
+                                            -2
+                                    )
 
                                 DropdownMenuItem(
-
                                     text = {
-                                        Text(sede)
-                                    },
 
+                                        Text(
+                                            text =
+                                                sede.name
+                                        )
+                                    },
+                                    enabled =
+                                        habilitada ||
+                                                uiState.destinoId ==
+                                                sede.id,
                                     onClick = {
 
-                                        destinoSeleccionado =
-                                            sede
+                                        if (
+                                            habilitada ||
+                                            uiState.destinoId ==
+                                            sede.id
+                                        ) {
 
-                                        destinoExpandido =
-                                            false
+                                            viewModel
+                                                .seleccionarDestino(
+                                                    sede.id
+                                                )
+
+                                            destinoExpandido =
+                                                false
+                                        }
                                     }
                                 )
                             }
                         }
                     }
 
-
-                    // Explica cómo se recorrerán las paradas
                     Surface(
                         modifier =
                             Modifier.fillMaxWidth(),
-
                         shape =
-                            RoundedCornerShape(10.dp),
-
-                        color = NavySoft // Fondo azul marino suave para el aviso
+                            RoundedCornerShape(
+                                10.dp
+                            ),
+                        color =
+                            NavySoft
                     ) {
 
                         Text(
                             text =
-                                "Las paradas se visitan en el orden mostrado. Puedes agregar tantas como necesites.",
-
+                                construirVistaPrevia(
+                                    sedes =
+                                        uiState.sedes,
+                                    origenId =
+                                        uiState.origenId,
+                                    paradas =
+                                        uiState.paradasIds,
+                                    destinoId =
+                                        uiState.destinoId
+                                ),
                             modifier =
-                                Modifier.padding(14.dp),
-
-                            fontSize = 13.sp,
-
-                            color = Navy // Color Azul Marino para el texto
+                                Modifier.padding(
+                                    14.dp
+                                ),
+                            fontSize =
+                                13.sp,
+                            color =
+                                Navy,
+                            fontWeight =
+                                FontWeight.Medium
                         )
                     }
 
+                    if (
+                        editando
+                    ) {
 
-                    // Muestra errores del formulario
-                    if (mensajeError.isNotBlank()) {
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            verticalAlignment =
+                                Alignment.CenterVertically,
+                            horizontalArrangement =
+                                Arrangement.SpaceBetween
+                        ) {
 
-                        Text(
-                            text = mensajeError,
+                            Column(
+                                modifier =
+                                    Modifier.weight(
+                                        1f
+                                    )
+                            ) {
 
-                            color = Color(0xFFE53935), // Rojo para errores
+                                Text(
+                                    text =
+                                        "Ruta activa",
+                                    fontSize =
+                                        14.sp,
+                                    fontWeight =
+                                        FontWeight.Bold,
+                                    color =
+                                        Ink
+                                )
 
-                            fontSize = 12.sp
-                        )
+                                Text(
+                                    text =
+                                        if (
+                                            uiState.rutaActiva
+                                        ) {
+                                            "Disponible para nuevos traslados"
+                                        } else {
+                                            "No disponible para nuevos traslados"
+                                        },
+                                    fontSize =
+                                        12.sp,
+                                    color =
+                                        Muted
+                                )
+                            }
+
+                            Switch(
+                                checked =
+                                    uiState.rutaActiva,
+                                onCheckedChange = { valor ->
+
+                                    if (
+                                        !uiState.guardando
+                                    ) {
+
+                                        viewModel
+                                            .cambiarEstadoRuta(
+                                                valor
+                                            )
+                                    }
+                                },
+                                enabled =
+                                    !uiState.guardando,
+                                colors =
+                                    SwitchDefaults
+                                        .colors(
+                                            checkedThumbColor =
+                                                Color.White,
+                                            checkedTrackColor =
+                                                Navy
+                                        )
+                            )
+                        }
+                    }
+
+                    val errorFormulario =
+                        uiState.error
+
+                    if (
+                        errorFormulario !=
+                        null
+                    ) {
+
+                        Surface(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            shape =
+                                RoundedCornerShape(
+                                    10.dp
+                                ),
+                            color =
+                                Color(
+                                    0xFFFFEBEE
+                                )
+                        ) {
+
+                            Text(
+                                text =
+                                    errorFormulario,
+                                modifier =
+                                    Modifier.padding(
+                                        12.dp
+                                    ),
+                                color =
+                                    Color(
+                                        0xFFC62828
+                                    ),
+                                fontSize =
+                                    12.sp
+                            )
+                        }
                     }
                 }
             },
-
-
             confirmButton = {
 
                 Button(
                     onClick = {
 
-                        // Verifica que origen y destino estén seleccionados
                         if (
-                            origenSeleccionado.isBlank() ||
-                            destinoSeleccionado.isBlank()
+                            !uiState.guardando
                         ) {
 
-                            mensajeError =
-                                "Selecciona origen y destino"
+                            origenExpandido =
+                                false
 
-                        }
+                            destinoExpandido =
+                                false
 
-                        // Evita crear una ruta con el mismo origen y destino
-                        else if (
-                            origenSeleccionado ==
-                            destinoSeleccionado
-                        ) {
+                            paradaExpandida =
+                                -1
 
-                            mensajeError =
-                                "El origen y destino no pueden ser iguales"
-                        }
-
-                        // Verifica que las paradas agregadas tengan una sede
-                        else if (
-                            paradasIntermedias.any {
-                                it.isBlank()
-                            }
-                        ) {
-
-                            mensajeError =
-                                "Selecciona todas las paradas intermedias"
-                        }
-
-                        else {
-
-                            val todasLasSedes =
-                                listOf(
-                                    origenSeleccionado
-                                ) +
-                                        paradasIntermedias +
-                                        destinoSeleccionado
-
-
-                            // Evita repetir una sede dentro de la misma ruta
-                            if (
-                                todasLasSedes.distinct()
-                                    .size !=
-                                todasLasSedes.size
-                            ) {
-
-                                mensajeError =
-                                    "Una sede no puede repetirse en la ruta"
-
-                            } else {
-
-                                // Guarda las paradas para mostrarlas después
-                                val paradasGuardadas =
-                                    paradasIntermedias
-                                        .joinToString("|")
-
-
-                                if (
-                                    indiceEditar == -1
-                                ) {
-
-                                    // Agrega una nueva ruta
-                                    rutas.add(
-
-                                        listOf(
-                                            origenSeleccionado,
-                                            destinoSeleccionado,
-                                            paradasGuardadas,
-
-                                            // Una ruta nueva inicia sin encomiendas activas
-                                            "0"
-                                        )
-                                    )
-
-                                } else {
-
-                                    // Conserva las encomiendas activas de la ruta
-                                    val encomiendasActivas =
-                                        rutas[indiceEditar][3]
-
-
-                                    // Actualiza la ruta seleccionada
-                                    rutas[indiceEditar] =
-
-                                        listOf(
-                                            origenSeleccionado,
-                                            destinoSeleccionado,
-                                            paradasGuardadas,
-                                            encomiendasActivas
-                                        )
-                                }
-
-
-                                mostrarFormulario =
-                                    false
-                            }
+                            viewModel
+                                .guardarRuta()
                         }
                     },
-
+                    enabled =
+                        !uiState.guardando,
                     modifier =
                         Modifier.fillMaxWidth(),
-
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Navy, // Fondo Azul Marino
-                        contentColor = Color.White // Texto blanco
-                    )
+                    colors =
+                        ButtonDefaults
+                            .buttonColors(
+                                containerColor =
+                                    Navy,
+                                contentColor =
+                                    Color.White
+                            )
                 ) {
 
-                    Text(
-                        text =
-                            if (
-                                indiceEditar == -1
-                            ) {
-                                "Guardar ruta"
-                            } else {
-                                "Guardar cambios"
-                            }
-                    )
+                    if (
+                        uiState.guardando
+                    ) {
+
+                        CircularProgressIndicator(
+                            modifier =
+                                Modifier.size(
+                                    20.dp
+                                ),
+                            strokeWidth =
+                                2.dp,
+                            color =
+                                Color.White
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(
+                                    8.dp
+                                )
+                        )
+
+                        Text(
+                            text =
+                                "Guardando..."
+                        )
+
+                    } else {
+
+                        Text(
+                            text =
+                                if (
+                                    editando
+                                ) {
+                                    "Guardar cambios"
+                                } else {
+                                    "Guardar ruta"
+                                },
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
                 }
             },
-
-
             dismissButton = {
 
                 TextButton(
                     onClick = {
-                        mostrarFormulario = false
-                    }
+
+                        if (
+                            !uiState.guardando
+                        ) {
+
+                            origenExpandido =
+                                false
+
+                            destinoExpandido =
+                                false
+
+                            paradaExpandida =
+                                -1
+
+                            viewModel
+                                .cerrarFormulario()
+                        }
+                    },
+                    enabled =
+                        !uiState.guardando
                 ) {
 
                     Text(
-                        "Cancelar",
-                        color = Navy // Color Azul Marino para el botón cancelar
+                        text =
+                            "Cancelar",
+                        color =
+                            Navy
                     )
                 }
-            }
+            },
+            containerColor =
+                Surface
         )
     }
+}
+
+@Composable
+private fun RutaFila(
+    ruta: Ruta,
+    onEditar: () -> Unit
+) {
+
+    val sedesOrdenadas =
+        ruta.sedes
+            .sortedBy {
+                it.orden
+            }
+
+    val recorrido =
+        mutableListOf<String>()
+
+    for (
+    rutaSede in sedesOrdenadas
+    ) {
+
+        recorrido.add(
+            rutaSede.sedeNombre
+        )
+    }
+
+    val recorridoTexto =
+        recorrido.joinToString(
+            " → "
+        )
+
+    val paradas =
+        mutableListOf<String>()
+
+    if (
+        recorrido.size > 2
+    ) {
+
+        var index =
+            1
+
+        while (
+            index <
+            recorrido.size - 1
+        ) {
+
+            paradas.add(
+                recorrido[index]
+            )
+
+            index++
+        }
+    }
+
+    val paradasTexto =
+        if (
+            paradas.isEmpty()
+        ) {
+            "Directa"
+        } else {
+            paradas.joinToString(
+                ", "
+            )
+        }
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal =
+                        14.dp,
+                    vertical =
+                        14.dp
+                ),
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+
+        Column(
+            modifier =
+                Modifier.weight(
+                    3.2f
+                )
+        ) {
+
+            Text(
+                text =
+                    recorridoTexto,
+                fontSize =
+                    14.sp,
+                fontWeight =
+                    FontWeight.Bold,
+                color =
+                    Ink
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        4.dp
+                    )
+            )
+
+            Text(
+                text =
+                    ruta.name,
+                fontSize =
+                    11.sp,
+                color =
+                    Muted
+            )
+        }
+
+        Text(
+            text =
+                paradasTexto,
+            modifier =
+                Modifier.weight(
+                    2.2f
+                ),
+            fontSize =
+                13.sp,
+            color =
+                Ink
+        )
+
+        Box(
+            modifier =
+                Modifier.weight(
+                    1.1f
+                )
+        ) {
+
+            EstadoRuta(
+                active =
+                    ruta.active
+            )
+        }
+
+        Box(
+            modifier =
+                Modifier.weight(
+                    0.7f
+                ),
+            contentAlignment =
+                Alignment.Center
+        ) {
+
+            IconButton(
+                onClick =
+                    onEditar
+            ) {
+
+                Icon(
+                    imageVector =
+                        Icons.Default.Edit,
+                    contentDescription =
+                        "Editar ruta",
+                    tint =
+                        Navy
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EstadoRuta(
+    active: Boolean
+) {
+
+    val texto =
+        if (
+            active
+        ) {
+            "Activa"
+        } else {
+            "Inactiva"
+        }
+
+    val fondo =
+        if (
+            active
+        ) {
+            NavySoft
+        } else {
+            Color(
+                0xFFF2F2F2
+            )
+        }
+
+    val textoColor =
+        if (
+            active
+        ) {
+            Navy
+        } else {
+            Muted
+        }
+
+    Surface(
+        shape =
+            RoundedCornerShape(
+                20.dp
+            ),
+        color =
+            fondo
+    ) {
+
+        Text(
+            text =
+                texto,
+            modifier =
+                Modifier.padding(
+                    horizontal =
+                        12.dp,
+                    vertical =
+                        6.dp
+                ),
+            fontSize =
+                12.sp,
+            fontWeight =
+                FontWeight.Bold,
+            color =
+                textoColor
+        )
+    }
+}
+
+@Composable
+private fun MensajeRuta(
+    texto: String,
+    esError: Boolean,
+    onCerrar: () -> Unit
+) {
+
+    val fondo =
+        if (
+            esError
+        ) {
+            Color(
+                0xFFFFEBEE
+            )
+        } else {
+            NavySoft
+        }
+
+    val colorTexto =
+        if (
+            esError
+        ) {
+            Color(
+                0xFFC62828
+            )
+        } else {
+            Navy
+        }
+
+    Card(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                12.dp
+            ),
+        colors =
+            CardDefaults
+                .cardColors(
+                    containerColor =
+                        fondo
+                ),
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+                color =
+                    if (
+                        esError
+                    ) {
+                        Color(
+                            0xFFEF9A9A
+                        )
+                    } else {
+                        Navy
+                    }
+            )
+    ) {
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        12.dp
+                    ),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Text(
+                text =
+                    texto,
+                modifier =
+                    Modifier.weight(
+                        1f
+                    ),
+                fontSize =
+                    13.sp,
+                color =
+                    colorTexto
+            )
+
+            TextButton(
+                onClick =
+                    onCerrar
+            ) {
+
+                Text(
+                    text =
+                        "Cerrar",
+                    color =
+                        colorTexto
+                )
+            }
+        }
+    }
+}
+
+private fun obtenerNombreSede(
+    sedes: List<Sede>,
+    sedeId: Int
+): String {
+
+    if (
+        sedeId <= 0
+    ) {
+
+        return ""
+    }
+
+    for (
+    sede in sedes
+    ) {
+
+        if (
+            sede.id ==
+            sedeId
+        ) {
+
+            return sede.name
+        }
+    }
+
+    return ""
+}
+
+private fun obtenerNombreSede(
+    sedes: List<Sede>,
+    sedeId: Int?
+): String {
+
+    if (
+        sedeId == null
+    ) {
+
+        return ""
+    }
+
+    return obtenerNombreSede(
+        sedes =
+            sedes,
+        sedeId =
+            sedeId
+    )
+}
+
+private fun sedeDisponible(
+    sedeId: Int,
+    origenId: Int?,
+    destinoId: Int?,
+    paradas: List<Int>,
+    posicion: Int
+): Boolean {
+
+    if (
+        sedeId <= 0
+    ) {
+
+        return false
+    }
+
+    if (
+        posicion != -1
+    ) {
+
+        if (
+            origenId != null
+        ) {
+
+            if (
+                sedeId ==
+                origenId
+            ) {
+
+                return false
+            }
+        }
+    }
+
+    if (
+        posicion != -2
+    ) {
+
+        if (
+            destinoId != null
+        ) {
+
+            if (
+                sedeId ==
+                destinoId
+            ) {
+
+                return false
+            }
+        }
+    }
+
+    var index =
+        0
+
+    while (
+        index <
+        paradas.size
+    ) {
+
+        if (
+            index !=
+            posicion
+        ) {
+
+            if (
+                paradas[index] ==
+                sedeId
+            ) {
+
+                return false
+            }
+        }
+
+        index++
+    }
+
+    return true
+}
+
+private fun construirVistaPrevia(
+    sedes: List<Sede>,
+    origenId: Int?,
+    paradas: List<Int>,
+    destinoId: Int?
+): String {
+
+    val nombres =
+        mutableListOf<String>()
+
+    if (
+        origenId != null
+    ) {
+
+        val nombreOrigen =
+            obtenerNombreSede(
+                sedes =
+                    sedes,
+                sedeId =
+                    origenId
+            )
+
+        if (
+            nombreOrigen.isNotBlank()
+        ) {
+
+            nombres.add(
+                nombreOrigen
+            )
+        }
+    }
+
+    for (
+    paradaId in paradas
+    ) {
+
+        if (
+            paradaId > 0
+        ) {
+
+            val nombreParada =
+                obtenerNombreSede(
+                    sedes =
+                        sedes,
+                    sedeId =
+                        paradaId
+                )
+
+            if (
+                nombreParada.isNotBlank()
+            ) {
+
+                nombres.add(
+                    nombreParada
+                )
+            }
+        }
+    }
+
+    if (
+        destinoId != null
+    ) {
+
+        val nombreDestino =
+            obtenerNombreSede(
+                sedes =
+                    sedes,
+                sedeId =
+                    destinoId
+            )
+
+        if (
+            nombreDestino.isNotBlank()
+        ) {
+
+            nombres.add(
+                nombreDestino
+            )
+        }
+    }
+
+    if (
+        nombres.isEmpty()
+    ) {
+
+        return "Selecciona las sedes de la ruta"
+    }
+
+    return nombres.joinToString(
+        " → "
+    )
 }

@@ -30,6 +30,8 @@ sealed class Screen {
 
     object Reception: Screen()
 
+    object Tarifas: Screen()
+
     object RegisterShipment : Screen()
 
     object ShipmentConfirmation : Screen()

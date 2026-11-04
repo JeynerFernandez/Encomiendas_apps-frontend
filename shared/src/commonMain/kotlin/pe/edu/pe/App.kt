@@ -5,9 +5,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
-import pe.edu.pe.data.model.Shipment
-import pe.edu.pe.data.model.ShipmentStatus
+import org.koin.compose.KoinApplication
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+
 import pe.edu.pe.data.repository.ShipmentRepository
+import pe.edu.pe.di.appModule
+import pe.edu.pe.domain.model.User
 
 import pe.edu.pe.presentation.AdminDashboardContent
 import pe.edu.pe.presentation.CalculadoraCostoScreen
@@ -16,6 +20,7 @@ import pe.edu.pe.presentation.GestionMovilidadAdminContent
 import pe.edu.pe.presentation.GestionRolesAdminContent
 import pe.edu.pe.presentation.GestionRutasAdminContent
 import pe.edu.pe.presentation.GestionSedesAdminContent
+import pe.edu.pe.presentation.GestionTarifasAdminContent
 import pe.edu.pe.presentation.HomeContent
 import pe.edu.pe.presentation.LoginScreen
 import pe.edu.pe.presentation.ReportesAdminContent
@@ -25,7 +30,7 @@ import pe.edu.pe.presentation.SplashContent
 import pe.edu.pe.presentation.movilidad.MovilidadScreen
 
 import pe.edu.pe.presentation.reception.ReceptionScreen
-import pe.edu.pe.presentation.reception.delivery.DeliverWarehouseScreen
+import pe.edu.pe.presentation.reception.delivery.PendientesEntregaScreen
 import pe.edu.pe.presentation.reception.register.RegisterShipmentScreen
 import pe.edu.pe.presentation.reception.register.ShipmentConfirmationScreen
 
@@ -33,234 +38,466 @@ import pe.edu.pe.presentation.settings.SettingsScreen
 import pe.edu.pe.presentation.support.SupportScreen
 import pe.edu.pe.presentation.theme.MandaYaTheme
 import pe.edu.pe.presentation.trackorder.TrackingScreen
-
+import pe.edu.pe.presentation.viewmodel.AlmacenViewModel
 import pe.edu.pe.presentation.warehouse.WarehouseScreen
+
+import pe.edu.pe.presentation.viewmodel.AuthState
+import pe.edu.pe.presentation.viewmodel.AuthViewModel
+import pe.edu.pe.presentation.viewmodel.RutaViewModel
 
 
 @Composable
 fun App() {
 
+    KoinApplication(
+        application = {
+
+            modules(
+                appModule
+            )
+        }
+    ) {
+
+        MandaYaApp()
+    }
+}
+
+
+@Composable
+private fun MandaYaApp() {
+
+
+    // =====================================================
+    // VIEWMODEL DE AUTENTICACIÓN
+    // =====================================================
+
+    val authViewModel =
+        koinViewModel<AuthViewModel>()
+
+
+    val authState by
+    authViewModel.state
+        .collectAsState()
+
+
+    // =====================================================
+    // PANTALLA ACTUAL
+    // =====================================================
+
     var currentScreen by remember {
+
         mutableStateOf<Screen>(
             Screen.Splash
         )
     }
 
-    // =========================
-    // CONFIGURACIÓN
-    // =========================
+
+    // =====================================================
+    // USUARIO ACTUAL
+    // =====================================================
+
+    // Guardamos al usuario después de iniciar sesión.
+    // Esto es importante porque necesitamos su sedeId
+    // para el módulo de Recepción.
+
+    var currentUser by remember {
+
+        mutableStateOf<User?>(
+            null
+        )
+    }
+
+
+    // =====================================================
+    // CONFIGURACIÓN DE LA APP
+    // =====================================================
 
     var isDarkMode by remember {
-        mutableStateOf(false)
+
+        mutableStateOf(
+            false
+        )
     }
+
 
     var fontSizeScale by remember {
-        mutableStateOf(1.0f)
+
+        mutableStateOf(
+            1.0f
+        )
     }
 
-    // =========================
-    // LOGIN
-    // =========================
 
     var isLoggedIn by remember {
-        mutableStateOf(false)
+
+        mutableStateOf(
+            false
+        )
     }
 
-    // =========================
-    // DATOS DE CONFIRMACIÓN
-    // =========================
+
+    // =====================================================
+    // OBSERVAMOS EL LOGIN
+    // =====================================================
+
+    LaunchedEffect(
+        authState
+    ) {
+
+        when (
+            val state =
+                authState
+        ) {
+
+            is AuthState.Success -> {
+
+
+                // Guardamos el usuario antes de limpiar
+                // el estado del AuthViewModel.
+                currentUser =
+                    state.user
+
+
+                isLoggedIn =
+                    true
+
+
+                // Navegación según el rol.
+                currentScreen =
+                    when (
+                        state.user.role
+                            .uppercase()
+                    ) {
+
+                        "CLIENTE" -> {
+
+                            Screen.Home
+                        }
+
+
+                        "ADMINISTRADOR" -> {
+
+                            Screen.VistaAdmin
+                        }
+
+
+                        "MOVILIDAD" -> {
+
+                            Screen.Movilidad
+                        }
+
+
+                        "RECEPCION" -> {
+
+                            Screen.Reception
+                        }
+
+
+                        "ALMACEN" -> {
+
+                            Screen.Warehouse
+                        }
+
+
+                        else -> {
+
+                            isLoggedIn =
+                                false
+
+                            currentUser =
+                                null
+
+                            Screen.Login
+                        }
+                    }
+
+
+                // Limpiamos Loading/Success del login,
+                // pero el usuario ya quedó guardado
+                // en currentUser.
+                authViewModel
+                    .resetState()
+            }
+
+
+            else -> Unit
+        }
+    }
+
+
+    // =====================================================
+    // DATOS DE CONFIRMACIÓN DE ENCOMIENDA
+    // =====================================================
+
+    // Estos datos reciben la respuesta REAL
+    // después del POST /encomienda.
+
 
     var trackingCode by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var shipmentPassword by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var senderDni by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var recipientDni by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var originBranch by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var destinationBranch by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var shipmentWeight by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var shipmentHeight by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var shipmentWidth by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var shipmentLength by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var shipmentBillableWeight by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
+
 
     var shipmentCost by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            ""
+        )
     }
 
+
+    // Modalidad de pago que mostraremos
+    // en la confirmación.
+    var shipmentPaymentMethod by remember {
+
+        mutableStateOf(
+            ""
+        )
+    }
+
+
     // =====================================================
-    // IMPORTANTE:
-    // YA NO CREAMOS OTRA LISTA LOCAL.
+    // REPOSITORIO LOCAL ANTIGUO
+    // =====================================================
+
+    // Todavía se mantiene porque ReceptionScreen
+    // y DeliverWarehouseScreen actualmente lo utilizan.
     //
-    // Todas las pantallas utilizan el mismo repositorio.
+    // IMPORTANTE:
+    // Las nuevas encomiendas ya NO se agregan aquí
+    // después de registrarlas.
+    //
+    // El registro real se guarda en MySQL mediante:
+    // POST /encomienda.
+
+    val shipments =
+        ShipmentRepository.shipments
+
+
     // =====================================================
-
-    val shipments = ShipmentRepository.shipments
-
+    // TEMA PRINCIPAL
+    // =====================================================
 
     MandaYaTheme(
-        darkTheme = isDarkMode,
-        fontSizeScale = fontSizeScale
+
+        darkTheme =
+            isDarkMode,
+
+        fontSizeScale =
+            fontSizeScale
+
     ) {
 
         Surface(
-            modifier = Modifier.fillMaxSize()
+            modifier =
+                Modifier.fillMaxSize()
         ) {
 
-            when (currentScreen) {
 
-                // =====================================================
+            // =====================================================
+            // NAVEGACIÓN
+            // =====================================================
+
+            when (
+                currentScreen
+            ) {
+
+
+                // =================================================
                 // SPLASH
-                // =====================================================
+                // =================================================
 
                 is Screen.Splash -> {
 
                     SplashContent(
+
                         onTimeout = {
+
                             currentScreen =
                                 Screen.Login
                         }
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // LOGIN
-                // =====================================================
+                // =================================================
 
                 is Screen.Login -> {
 
                     LoginScreen(
 
+                        isLoading =
+                            authState is
+                                    AuthState.Loading,
+
+                        errorMessage =
+                            (
+                                    authState as?
+                                            AuthState.Error
+                                    )
+                                ?.message,
+
+
                         onLoginClick = {
-                                user,
-                                pass ->
+                                email,
+                                password ->
 
-                            when {
+                            authViewModel
+                                .login(
 
-                                user.lowercase() == "cliente" &&
-                                        pass == "cliente" -> {
+                                    email =
+                                        email,
 
-                                    isLoggedIn = true
-
-                                    currentScreen =
-                                        Screen.Home
-                                }
-
-                                user.lowercase() == "admin" &&
-                                        pass == "admin" -> {
-
-                                    isLoggedIn = true
-
-                                    currentScreen =
-                                        Screen.VistaAdmin
-                                }
-
-                                user.lowercase() == "movilidad" &&
-                                        pass == "movilidad" -> {
-
-                                    isLoggedIn = true
-
-                                    currentScreen =
-                                        Screen.Movilidad
-                                }
-
-                                user.lowercase() == "recepcion" &&
-                                        pass == "recepcion" -> {
-
-                                    isLoggedIn = true
-
-                                    currentScreen =
-                                        Screen.Reception
-                                }
-                                user.lowercase() == "almacen" &&
-                                        pass == "almacen" -> {
-
-                                    isLoggedIn = true
-
-                                    currentScreen =
-                                        Screen.Warehouse
-                                }
-
-                                else -> {
-
-                                    isLoggedIn = false
-                                }
-                            }
+                                    password =
+                                        password
+                                )
                         },
+
 
                         onRegisterClick = {
 
+                            // Registro de cliente
+                            // todavía no conectado aquí.
                         },
+
 
                         onForgotPasswordClick = {
 
+                            // Recuperación de contraseña
+                            // todavía no implementada.
                         },
+
 
                         onGoogleClick = {
 
-                            isLoggedIn = true
-
-                            currentScreen =
-                                Screen.Home
+                            // Login con Google
+                            // todavía no conectado.
                         }
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // CLIENTE
-                // =====================================================
+                // =================================================
 
                 is Screen.Home -> {
 
                     HomeContent(
 
-                        isLoggedIn = isLoggedIn,
+                        isLoggedIn =
+                            isLoggedIn,
+
 
                         onLogout = {
 
-                            isLoggedIn = false
+                            isLoggedIn =
+                                false
+
+                            currentUser =
+                                null
 
                             currentScreen =
                                 Screen.Login
                         },
 
+
                         onEditProfile = {
 
+                            // Perfil del cliente.
                         },
+
 
                         onCartClick = {
 
+                            // Carrito.
                         },
+
 
                         onCalcularEncomienda = {
 
@@ -268,11 +505,13 @@ fun App() {
                                 Screen.CalcularEncomienda
                         },
 
+
                         onSupportClick = {
 
                             currentScreen =
                                 Screen.Support
                         },
+
 
                         onTrackingClick = {
 
@@ -280,19 +519,23 @@ fun App() {
                                 Screen.Tracking
                         },
 
+
                         onSettingsClick = {
 
                             currentScreen =
                                 Screen.Ajustes
                         },
 
-                        cartSize = 0
+
+                        cartSize =
+                            0
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // SOPORTE
-                // =====================================================
+                // =================================================
 
                 is Screen.Support -> {
 
@@ -306,9 +549,10 @@ fun App() {
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // RASTREO
-                // =====================================================
+                // =================================================
 
                 is Screen.Tracking -> {
 
@@ -322,9 +566,10 @@ fun App() {
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // AJUSTES
-                // =====================================================
+                // =================================================
 
                 is Screen.Ajustes -> {
 
@@ -336,27 +581,34 @@ fun App() {
                                 Screen.Home
                         },
 
+
                         isDarkMode =
                             isDarkMode,
 
+
                         onDarkModeChange = {
 
-                            isDarkMode = it
+                            isDarkMode =
+                                it
                         },
+
 
                         fontSizeScale =
                             fontSizeScale,
 
+
                         onFontSizeScaleChange = {
 
-                            fontSizeScale = it
+                            fontSizeScale =
+                                it
                         }
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // CALCULADORA
-                // =====================================================
+                // =================================================
 
                 is Screen.CalcularEncomienda -> {
 
@@ -370,9 +622,10 @@ fun App() {
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // MOVILIDAD
-                // =====================================================
+                // =================================================
 
                 is Screen.Movilidad -> {
 
@@ -386,9 +639,10 @@ fun App() {
                     )
                 }
 
-                // =====================================================
-                // ADMIN
-                // =====================================================
+
+                // =================================================
+                // ADMINISTRADOR
+                // =================================================
 
                 is Screen.VistaAdmin -> {
 
@@ -400,11 +654,13 @@ fun App() {
                                 Screen.VitsaAdminReporte
                         },
 
+
                         onEncomiendasClick = {
 
                             currentScreen =
                                 Screen.VistaAdminEncomiendas
                         },
+
 
                         onMovilidadClick = {
 
@@ -412,11 +668,20 @@ fun App() {
                                 Screen.VistaAdminMovilidad
                         },
 
+
                         onSedesClick = {
 
                             currentScreen =
                                 Screen.VistaAdminSedes
                         },
+
+
+                        onTarifasClick = {
+
+                            currentScreen =
+                                Screen.Tarifas
+                        },
+
 
                         onRolesClick = {
 
@@ -424,25 +689,38 @@ fun App() {
                                 Screen.VistaAdminRoles
                         },
 
+
                         onRutasClick = {
 
                             currentScreen =
                                 Screen.VistaAdminRutas
                         },
 
+
                         onProfileClick = {
 
+                            // Perfil administrador.
                         },
+
 
                         onLogout = {
 
-                            isLoggedIn = false
+                            isLoggedIn =
+                                false
+
+                            currentUser =
+                                null
 
                             currentScreen =
                                 Screen.Login
                         }
                     )
                 }
+
+
+                // =================================================
+                // REPORTES ADMIN
+                // =================================================
 
                 is Screen.VitsaAdminReporte -> {
 
@@ -456,6 +734,11 @@ fun App() {
                     )
                 }
 
+
+                // =================================================
+                // ENCOMIENDAS ADMIN
+                // =================================================
+
                 is Screen.VistaAdminEncomiendas -> {
 
                     GestionEncomiendasAdminContent(
@@ -467,6 +750,11 @@ fun App() {
                         }
                     )
                 }
+
+
+                // =================================================
+                // SEDES ADMIN
+                // =================================================
 
                 is Screen.VistaAdminSedes -> {
 
@@ -480,9 +768,33 @@ fun App() {
                     )
                 }
 
+
+                // =================================================
+                // RUTAS ADMIN
+                // =================================================
+
                 is Screen.VistaAdminRutas -> {
 
+                    val rutaViewModel: RutaViewModel =
+                        koinViewModel()
+
                     GestionRutasAdminContent(
+                        viewModel = rutaViewModel,
+                        onSalirClick = {
+                            currentScreen =
+                                Screen.VistaAdmin
+                        }
+                    )
+                }
+
+
+                // =================================================
+                // TARIFAS ADMIN
+                // =================================================
+
+                is Screen.Tarifas -> {
+
+                    GestionTarifasAdminContent(
 
                         onSalirClick = {
 
@@ -491,6 +803,11 @@ fun App() {
                         }
                     )
                 }
+
+
+                // =================================================
+                // ROLES ADMIN
+                // =================================================
 
                 is Screen.VistaAdminRoles -> {
 
@@ -504,6 +821,11 @@ fun App() {
                     )
                 }
 
+
+                // =================================================
+                // MOVILIDAD ADMIN
+                // =================================================
+
                 is Screen.VistaAdminMovilidad -> {
 
                     GestionMovilidadAdminContent(
@@ -516,72 +838,70 @@ fun App() {
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // RECEPCIÓN
-                // =====================================================
+                // =================================================
 
                 is Screen.Reception -> {
 
                     ReceptionScreen(
 
                         onRegisterShipment = {
-                            currentScreen = Screen.RegisterShipment
+
+                            currentScreen =
+                                Screen.RegisterShipment
                         },
 
+
                         onDeliverWarehouse = {
-                            currentScreen = Screen.DeliverWarehouse
+
+                            currentScreen =
+                                Screen.DeliverWarehouse
                         },
+
 
                         onHistory = {
 
+                            // Historial de recepción.
                         },
+
 
                         onProfile = {
 
+                            // Perfil de recepción.
                         },
+
 
                         onLogout = {
-                            isLoggedIn = false
-                            currentScreen = Screen.Login
+
+                            isLoggedIn =
+                                false
+
+                            currentUser =
+                                null
+
+                            currentScreen =
+                                Screen.Login
                         },
 
-                        shipments = shipments
+
+                        // Temporalmente se conserva
+                        // hasta conectar el listado de recepción
+                        // con GET /encomienda.
+                        shipments =
+                            shipments
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // ENTREGAR A ALMACÉN
-                // =====================================================
+                // =================================================
 
                 is Screen.DeliverWarehouse -> {
 
-                    DeliverWarehouseScreen(
-
-                        shipments = shipments,
-
-                        onShipmentDelivered = {
-                                shipment ->
-
-                            /*
-                             * La pantalla devuelve
-                             * el Shipment actualizado.
-                             *
-                             * En lugar de actualizar
-                             * una lista local,
-                             * actualizamos el repositorio.
-                             */
-
-                            ShipmentRepository
-                                .actualizarShipment(
-                                    shipment
-                                )
-                        },
-
-                        onWarehouse = {
-
-                            currentScreen =
-                                Screen.Warehouse
-                        },
+                    PendientesEntregaScreen(
 
                         onBack = {
 
@@ -591,19 +911,45 @@ fun App() {
                     )
                 }
 
-                // =====================================================
-                // REGISTRAR ENVÍO
-                // =====================================================
+                // =================================================
+                // REGISTRAR ENCOMIENDA
+                // =================================================
 
                 is Screen.RegisterShipment -> {
 
                     RegisterShipmentScreen(
 
+                        // Regresa a Recepción sin registrar.
                         onBack = {
 
                             currentScreen =
                                 Screen.Reception
                         },
+
+
+                        // =================================================
+                        // SEDE DEL RECEPCIONISTA
+                        // =================================================
+
+                        // El usuario RECEPCION posee sedeId.
+                        //
+                        // Esta sede será utilizada como
+                        // sede de origen de la encomienda.
+                        //
+                        // El usuario NO podrá seleccionar
+                        // otra sede de origen.
+
+                        recepcionSedeId =
+                            currentUser?.sedeId,
+
+
+                        // =================================================
+                        // RESULTADO DEL POST /encomienda
+                        // =================================================
+
+                        // Este callback solamente se ejecutará
+                        // cuando la encomienda haya sido registrada
+                        // correctamente en el backend.
 
                         onShipmentGenerated = {
                                 code,
@@ -621,31 +967,46 @@ fun App() {
                                 payment ->
 
 
-                            // =========================================
+                            // =============================================
                             // GUARDAMOS DATOS PARA CONFIRMACIÓN
-                            // =========================================
+                            // =============================================
 
+                            // Código real generado por NestJS.
                             trackingCode =
                                 code
 
+
+                            // PIN real generado por NestJS.
                             shipmentPassword =
                                 password
 
+
+                            // DNI remitente real.
                             senderDni =
                                 sender
 
+
+                            // DNI destinatario real.
                             recipientDni =
                                 recipient
 
+
+                            // Sede origen real.
                             originBranch =
                                 origin
 
+
+                            // Sede destino real.
                             destinationBranch =
                                 destination
 
+
+                            // Peso registrado.
                             shipmentWeight =
                                 weight
 
+
+                            // Dimensiones registradas.
                             shipmentHeight =
                                 height
 
@@ -655,115 +1016,48 @@ fun App() {
                             shipmentLength =
                                 length
 
+
+                            // Actualmente el backend calcula
+                            // utilizando el peso real.
                             shipmentBillableWeight =
                                 billableWeight
 
+
+                            // Costo REAL calculado por el backend
+                            // según la tarifa configurada.
                             shipmentCost =
                                 cost
 
 
-                            // =========================================
-                            // CREAMOS LA ENCOMIENDA
-                            // =========================================
-
-                            val shipment =
-                                Shipment(
-
-                                    trackingCode =
-                                        code,
-
-                                    password =
-                                        password,
-
-                                    senderDni =
-                                        sender,
-
-                                    recipientDni =
-                                        recipient,
-
-                                    paymentMethod =
-                                        payment,
-
-                                    height =
-                                        height
-                                            .toDoubleOrNull()
-                                            ?: 0.0,
-
-                                    width =
-                                        width
-                                            .toDoubleOrNull()
-                                            ?: 0.0,
-
-                                    length =
-                                        length
-                                            .toDoubleOrNull()
-                                            ?: 0.0,
-
-                                    weight =
-                                        weight
-                                            .toDoubleOrNull()
-                                            ?: 0.0,
-
-                                    originBranch =
-                                        origin,
-
-                                    destinationBranch =
-                                        destination,
-
-                                    billableWeight =
-                                        billableWeight
-                                            .toDoubleOrNull()
-                                            ?: 0.0,
-
-                                    cost =
-                                        cost
-                                            .toDoubleOrNull()
-                                            ?: 0.0,
-
-                                    /*
-                                     * La encomienda acaba
-                                     * de ser registrada.
-                                     */
-                                    status =
-                                        ShipmentStatus.REGISTRADO,
-
-                                    warehouseToken =
-                                        null,
-
-                                    vehiclePlate =
-                                        null,
-
-                                    driver =
-                                        null,
-
-                                    /*
-                                     * La ubicación inicial
-                                     * es la sede de origen.
-                                     */
-                                    currentBranch =
-                                        origin,
-
-                                    /*
-                                     * Ruta inicial.
-                                     */
-                                    routeName =
-                                        "$origin → $destination"
-                                )
+                            // Modalidad:
+                            // Pago en origen o pago en destino.
+                            shipmentPaymentMethod =
+                                payment
 
 
-                            // =========================================
-                            // GUARDAR EN REPOSITORIO COMPARTIDO
-                            // =========================================
+                            // =============================================
+                            // NO CREAMOS OTRA ENCOMIENDA LOCAL
+                            // =============================================
 
-                            ShipmentRepository
-                                .agregarShipment(
-                                    shipment
-                                )
+                            // Antes aquí se hacía:
+                            //
+                            // val shipment = Shipment(...)
+                            //
+                            // ShipmentRepository.agregarShipment(shipment)
+                            //
+                            // Eso ya NO se hace porque la encomienda
+                            // acaba de guardarse realmente mediante:
+                            //
+                            // POST /encomienda
+                            //
+                            // Si volviéramos a crearla localmente,
+                            // tendríamos una encomienda en MySQL
+                            // y otra diferente en memoria.
 
 
-                            // =========================================
-                            // IR A CONFIRMACIÓN
-                            // =========================================
+                            // =============================================
+                            // IR A LA CONFIRMACIÓN
+                            // =============================================
 
                             currentScreen =
                                 Screen.ShipmentConfirmation
@@ -771,35 +1065,51 @@ fun App() {
                     )
                 }
 
-                // =====================================================
-                // CONFIRMACIÓN
-                // =====================================================
+
+                // =================================================
+                // CONFIRMACIÓN DE ENCOMIENDA
+                // =================================================
 
                 is Screen.ShipmentConfirmation -> {
 
                     ShipmentConfirmationScreen(
 
+                        // Código generado por el backend.
                         trackingCode =
                             trackingCode,
 
+
+                        // PIN de cuatro dígitos.
                         shipmentPassword =
                             shipmentPassword,
 
+
+                        // Remitente.
                         senderDni =
                             senderDni,
 
+
+                        // Destinatario.
                         recipientDni =
                             recipientDni,
 
+
+                        // Sede donde se registró.
                         originBranch =
                             originBranch,
 
+
+                        // Sede de destino.
                         destinationBranch =
                             destinationBranch,
 
+
+                        // Peso.
                         weight =
                             shipmentWeight,
 
+
+                        // Dimensiones.
                         height =
                             shipmentHeight,
 
@@ -809,12 +1119,24 @@ fun App() {
                         length =
                             shipmentLength,
 
+
+                        // Peso utilizado para mostrar
+                        // la cotización.
                         billableWeight =
                             shipmentBillableWeight,
 
+
+                        // Costo final confirmado por backend.
                         shippingCost =
                             shipmentCost,
 
+
+                        // Modalidad de pago.
+                        paymentMethod =
+                            shipmentPaymentMethod,
+
+
+                        // Regresa a Recepción.
                         onBack = {
 
                             currentScreen =
@@ -823,17 +1145,19 @@ fun App() {
                     )
                 }
 
-                // =====================================================
+
+                // =================================================
                 // ALMACÉN
-                // =====================================================
+                // =================================================
 
                 is Screen.Warehouse -> {
 
-                    WarehouseScreen(
+                    val almacenViewModel: AlmacenViewModel = koinInject()
 
-                        onBackClick  = {
-                            currentScreen =
-                                Screen.Login
+                    WarehouseScreen(
+                        viewModel = almacenViewModel,
+                        onBackClick = {
+                            currentScreen = Screen.Login
                         }
                     )
                 }

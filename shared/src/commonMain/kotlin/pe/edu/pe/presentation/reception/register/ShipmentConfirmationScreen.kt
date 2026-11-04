@@ -1,316 +1,554 @@
 package pe.edu.pe.presentation.reception.register
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
-import pe.edu.pe.presentation.theme.Background
-import pe.edu.pe.presentation.theme.Ink
-import pe.edu.pe.presentation.theme.Muted
-import pe.edu.pe.presentation.theme.Navy
-import pe.edu.pe.presentation.theme.Success
-import pe.edu.pe.presentation.theme.Surface
+import pe.edu.pe.presentation.theme.*
+
 
 @Composable
 fun ShipmentConfirmationScreen(
+
     trackingCode: String,
+
     shipmentPassword: String,
+
     senderDni: String,
+
     recipientDni: String,
+
     originBranch: String,
+
     destinationBranch: String,
+
     weight: String,
+
     height: String,
+
     width: String,
+
     length: String,
+
     billableWeight: String,
+
     shippingCost: String,
+
+    paymentMethod: String,
+
     onBack: () -> Unit
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
-            .statusBarsPadding()              // margen para la barra de estado
+            .background(
+                Background
+            )
+            .statusBarsPadding()
+            .verticalScroll(
+                rememberScrollState()
+            )
             .padding(
                 start = 20.dp,
-                top = 16.dp,                  // margen de la cabecera
+                top = 16.dp,
                 end = 20.dp,
                 bottom = 20.dp
             ),
-        horizontalAlignment = Alignment.CenterHorizontally
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
 
-        // Cabecera con flecha de retroceso
+
+        // Cabecera
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
+
+            IconButton(
+                onClick =
+                    onBack
+            ) {
+
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Regresar",
-                    tint = Ink
+                    imageVector =
+                        Icons.AutoMirrored
+                            .Outlined
+                            .ArrowBack,
+
+                    contentDescription =
+                        "Regresar",
+
+                    tint =
+                        Ink
                 )
             }
 
+
             Text(
-                text = "Confirmación",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
+                text =
+                    "Confirmación",
+
+                fontSize =
+                    18.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    Ink
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    20.dp
+                )
+        )
+
 
         Icon(
-            imageVector = Icons.Outlined.CheckCircle,
-            contentDescription = null,
-            tint = Success,
-            modifier = Modifier.size(48.dp)
-        )
+            imageVector =
+                Icons.Outlined.CheckCircle,
 
-        // ... el resto (textos, tarjeta y botón "Volver a recepción") queda igual
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
+            contentDescription =
+                null,
 
-        Text(
-            text = "Encomienda registrada",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Ink
-        )
+            tint =
+                Success,
 
-        Text(
-            text = "Entrega estos datos al cliente",
-            fontSize = 13.sp,
-            color = Muted
-        )
-
-        Spacer(
-            modifier = Modifier.height(24.dp)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = Surface,
-                    shape = RoundedCornerShape(14.dp)
+            modifier =
+                Modifier.size(
+                    58.dp
                 )
-                .padding(20.dp)
+        )
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    12.dp
+                )
+        )
+
+
+        Text(
+            text =
+                "Encomienda registrada",
+
+            fontSize =
+                22.sp,
+
+            fontWeight =
+                FontWeight.Bold,
+
+            color =
+                Ink
+        )
+
+
+        Text(
+            text =
+                "Entrega el código y PIN al cliente",
+
+            fontSize =
+                13.sp,
+
+            color =
+                Muted
+        )
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    24.dp
+                )
+        )
+
+
+        // Código y PIN
+        Card(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            shape =
+                RoundedCornerShape(
+                    16.dp
+                ),
+
+            colors =
+                CardDefaults
+                    .cardColors(
+                        containerColor =
+                            Surface
+                    )
         ) {
 
-            Text(
-                text = "Código de seguimiento",
-                fontSize = 13.sp,
-                color = Muted
-            )
+            Column(
+                modifier =
+                    Modifier.padding(
+                        20.dp
+                    )
+            ) {
 
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
+                Text(
+                    text =
+                        "Código de seguimiento",
 
-            Text(
-                text = trackingCode,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = Navy
-            )
+                    fontSize =
+                        13.sp,
 
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
+                    color =
+                        Muted
+                )
 
-            Text(
-                text = "Contraseña",
-                fontSize = 13.sp,
-                color = Muted
-            )
 
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
+                Text(
+                    text =
+                        trackingCode,
 
-            Text(
-                text = shipmentPassword,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
+                    fontSize =
+                        26.sp,
 
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
+                    fontWeight =
+                        FontWeight.Bold,
 
-            Text(
-                text = "Datos del envío",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
+                    color =
+                        Navy
+                )
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
 
-            Text(
-                text = "DNI del remitente",
-                fontSize = 13.sp,
-                color = Muted
-            )
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            18.dp
+                        )
+                )
 
-            Text(
-                text = senderDni,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Ink
-            )
 
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
+                Text(
+                    text =
+                        "PIN de seguridad",
 
-            Text(
-                text = "DNI del destinatario",
-                fontSize = 13.sp,
-                color = Muted
-            )
+                    fontSize =
+                        13.sp,
 
-            Text(
-                text = recipientDni,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Ink
-            )
+                    color =
+                        Muted
+                )
 
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
 
-            Text(
-                text = "Ruta",
-                fontSize = 13.sp,
-                color = Muted
-            )
+                Text(
+                    text =
+                        shipmentPassword,
 
-            Text(
-                text = "$originBranch → $destinationBranch",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Ink
-            )
+                    fontSize =
+                        24.sp,
 
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
+                    fontWeight =
+                        FontWeight.Bold,
 
-            Text(
-                text = "Peso",
-                fontSize = 13.sp,
-                color = Muted
-            )
-
-            Text(
-                text = "$weight kg",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Ink
-            )
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Text(
-                text = "Dimensiones",
-                fontSize = 13.sp,
-                color = Muted
-            )
-
-            Text(
-                text = "$height × $width × $length cm",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Ink
-            )
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Text(
-                text = "Peso facturable",
-                fontSize = 13.sp,
-                color = Muted
-            )
-
-            Text(
-                text = "$billableWeight kg",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Ink
-            )
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Text(
-                text = "Costo",
-                fontSize = 13.sp,
-                color = Muted
-            )
-
-            Text(
-                text = "S/ $shippingCost",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = Navy
-            )
-
+                    color =
+                        Ink
+                )
+            }
         }
 
+
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
         )
+
+
+        // Datos de la encomienda
+        Card(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            shape =
+                RoundedCornerShape(
+                    16.dp
+                ),
+
+            colors =
+                CardDefaults
+                    .cardColors(
+                        containerColor =
+                            Surface
+                    )
+        ) {
+
+            Column(
+                modifier =
+                    Modifier.padding(
+                        20.dp
+                    )
+            ) {
+
+                Text(
+                    text =
+                        "Datos del envío",
+
+                    fontSize =
+                        17.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        Ink
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            16.dp
+                        )
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "DNI del remitente",
+
+                    value =
+                        senderDni
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "DNI del destinatario",
+
+                    value =
+                        recipientDni
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "Sede de origen",
+
+                    value =
+                        originBranch
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "Sede de destino",
+
+                    value =
+                        destinationBranch
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "Ruta",
+
+                    value =
+                        "$originBranch → $destinationBranch"
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "Peso",
+
+                    value =
+                        "$weight kg"
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "Dimensiones",
+
+                    value =
+                        "$height × $width × $length cm"
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "Peso usado para tarifa",
+
+                    value =
+                        "$billableWeight kg"
+                )
+
+
+                ConfirmationData(
+                    label =
+                        "Modalidad de pago",
+
+                    value =
+                        paymentMethod
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            10.dp
+                        )
+                )
+
+
+                HorizontalDivider(
+                    color =
+                        Border
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            16.dp
+                        )
+                )
+
+
+                Text(
+                    text =
+                        "Costo total",
+
+                    fontSize =
+                        13.sp,
+
+                    color =
+                        Muted
+                )
+
+
+                Text(
+                    text =
+                        "S/ $shippingCost",
+
+                    fontSize =
+                        25.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        Navy
+                )
+            }
+        }
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    24.dp
+                )
+        )
+
 
         Button(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Navy,
-                contentColor = Surface
-            )
+            onClick =
+                onBack,
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(
+                        52.dp
+                    ),
+
+            shape =
+                RoundedCornerShape(
+                    10.dp
+                ),
+
+            colors =
+                ButtonDefaults
+                    .buttonColors(
+
+                        containerColor =
+                            Navy,
+
+                        contentColor =
+                            Surface
+                    )
         ) {
+
             Text(
-                text = "Volver a recepción",
-                fontWeight = FontWeight.Bold
+                text =
+                    "Volver a recepción",
+
+                fontWeight =
+                    FontWeight.Bold
             )
         }
+    }
+}
+
+
+@Composable
+private fun ConfirmationData(
+    label: String,
+    value: String
+) {
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    bottom = 12.dp
+                )
+    ) {
+
+        Text(
+            text =
+                label,
+
+            fontSize =
+                12.sp,
+
+            color =
+                Muted
+        )
+
+
+        Text(
+            text =
+                value,
+
+            fontSize =
+                15.sp,
+
+            fontWeight =
+                FontWeight.Medium,
+
+            color =
+                Ink
+        )
     }
 }
