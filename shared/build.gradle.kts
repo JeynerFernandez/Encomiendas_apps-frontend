@@ -11,7 +11,6 @@ plugins {
 
 kotlin {
 
-
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -55,9 +54,7 @@ kotlin {
         }
     }
 
-
     sourceSets {
-
 
         androidMain.dependencies {
 
@@ -76,22 +73,28 @@ kotlin {
             implementation(
                 "io.ktor:ktor-client-android:3.6.0"
             )
+
+            implementation(
+                "androidx.credentials:credentials:1.6.0"
+            )
+
+            implementation(
+                "androidx.credentials:credentials-play-services-auth:1.6.0"
+            )
+
+            implementation(
+                "com.google.android.libraries.identity.googleid:googleid:1.2.1"
+            )
         }
 
-
         iosMain.dependencies {
-
 
             implementation(
                 "io.ktor:ktor-client-darwin:3.6.0"
             )
         }
 
-
-
         commonMain.dependencies {
-
-
 
             implementation(
                 libs.compose.runtime
@@ -129,11 +132,9 @@ kotlin {
                 compose.materialIconsExtended
             )
 
-
             implementation(
                 libs.kotlinx.serialization.json
             )
-
 
             implementation(
                 "io.ktor:ktor-client-core:3.6.0"
@@ -150,7 +151,6 @@ kotlin {
             implementation(
                 "io.ktor:ktor-client-logging:3.6.0"
             )
-
 
             implementation(
                 "com.russhwolf:multiplatform-settings-no-arg:1.3.0"
@@ -177,7 +177,6 @@ kotlin {
         }
     }
 }
-
 
 dependencies {
 

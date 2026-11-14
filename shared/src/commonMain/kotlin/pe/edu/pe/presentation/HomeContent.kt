@@ -50,7 +50,8 @@ fun HomeContent(
     onSupportClick: ()-> Unit = {},
     onTrackingClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    cartSize: Int
+    cartSize: Int,
+    onSettingsClicked: () -> Unit
 ){
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -113,6 +114,12 @@ fun HomeContent(
                         selected = false,
                         onClick = {scope.launch { drawerState.close() }},
                         icon = {Icon(Icons.Default.Person, null)}
+                    )
+                    NavigationDrawerItem(
+                        label = { ScaledText("Ajustes", fontSize = 14f) },
+                        selected = false,
+                        onClick = {scope.launch { drawerState.close(); onSettingsClicked() }},
+                        icon = {Icon(Icons.Default.Settings, null)}
                     )
                     NavigationDrawerItem(
                         label = { ScaledText("CERRAR SESION", fontSize = 14f) },

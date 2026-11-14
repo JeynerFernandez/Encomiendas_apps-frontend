@@ -1,3 +1,4 @@
+
 package pe.edu.pe.Datas.remote.api
 
 import io.ktor.client.HttpClient
@@ -12,7 +13,9 @@ object ApiClient {
     private const val BASE_URL = "http://10.0.2.2:3000"
 
     val httpClient = HttpClient {
+
         install(ContentNegotiation) {
+
             json(
                 Json {
                     prettyPrint = true
@@ -23,7 +26,9 @@ object ApiClient {
         }
 
         install(Logging) {
-            level = LogLevel.ALL
+
+            level = LogLevel.NONE
+
         }
     }
 

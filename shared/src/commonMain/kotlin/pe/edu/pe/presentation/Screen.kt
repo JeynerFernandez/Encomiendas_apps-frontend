@@ -40,4 +40,6 @@ sealed class Screen {
 
     object Warehouse : Screen()
 
+    object NotificationSetting: Screen()
+
 }

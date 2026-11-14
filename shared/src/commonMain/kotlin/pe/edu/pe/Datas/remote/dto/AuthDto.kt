@@ -19,12 +19,10 @@ data class UserDto(
     val email: String,
     val active: Boolean,
     val sedeId: Int? = null,
-    @SerialName("notificacion_token")
-    val notificationToken: String?=null,
-
+    @SerialName("notification_token")
+    val notificationToken: String? = null,
     @SerialName("created_at")
     val createdAt: String,
-
     @SerialName("updated_at")
     val updatedAt: String,
     val role: RoleDto
