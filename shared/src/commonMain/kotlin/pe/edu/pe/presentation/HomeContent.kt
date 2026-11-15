@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import pe.edu.pe.domain.model.User
 import pe.edu.pe.presentation.theme.*
 
 @Composable
@@ -51,7 +52,8 @@ fun HomeContent(
     onTrackingClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     cartSize: Int,
-    onSettingsClicked: () -> Unit
+    onSettingsClicked: () -> Unit,
+    currentUser: User? = null
 ){
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -87,8 +89,17 @@ fun HomeContent(
                                     }
                                 }
                             }
-                            ScaledText("Jeyner Fernandez", fontSize = 24f, fontWeight = FontWeight.Bold, color = Color.White)
-                            ScaledText("fernandezjahir202@gmail.com", fontSize = 14f, color = Color.White.copy(alpha = 0.7f))
+                            ScaledText(
+                                currentUser?.name ?: "",
+                                fontSize = 24f,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            ScaledText(
+                                currentUser?.email ?: "",
+                                fontSize = 14f,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
                         }
                     }
                     else{

@@ -55,7 +55,7 @@ import pe.edu.pe.presentation.viewmodel.NotificationSettingsViewModel
 import pe.edu.pe.presentation.viewmodel.RutaViewModel
 import pe.edu.pe.presentation.warehouse.WarehouseScreen
 
-private const val GOOGLE_WEB_CLIENT_ID = "222180138660-m8mdqoab0d941p0as996298h0gfgjibb.apps.googleusercontent.com"
+private const val GOOGLE_WEB_CLIENT_ID = "277251979945-l3vt6mmkbevq5sbd2447nvtvqu4rd38b.apps.googleusercontent.com"
 
 @Composable
 fun App(
@@ -242,7 +242,8 @@ private fun MandaYaApp() {
                         onTrackingClick = { currentScreen = Screen.Tracking },
                         onSettingsClick = { currentScreen = Screen.Ajustes },
                         cartSize = 0,
-                        onSettingsClicked = { currentScreen = Screen.NotificationSetting }
+                        onSettingsClicked = { currentScreen = Screen.NotificationSetting },
+                        currentUser = currentUser
                     )
                 }
 

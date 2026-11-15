@@ -1,6 +1,6 @@
-
 package pe.edu.pe.presentation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -17,6 +17,20 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+
+private const val GOOGLE_SIGNIN_TAG = "MandaYa_GoogleSignIn"
+
+private fun logGoogleSignIn(message: String) {
+    Log.d(GOOGLE_SIGNIN_TAG, message)
+}
+
+private fun logGoogleSignInError(message: String, error: Throwable?) {
+    Log.e(
+        GOOGLE_SIGNIN_TAG,
+        "$message | exceptionClass=${error?.javaClass?.name} | exceptionMessage=${error?.message}",
+        error
+    )
+}
 
 @Composable
 actual fun rememberGoogleSignInLauncher(
@@ -49,6 +63,10 @@ actual fun rememberGoogleSignInLauncher(
 
     return { nonce ->
 
+        logGoogleSignIn("Inicio del proceso de autenticación con Google")
+
+        logGoogleSignIn("Validación del nonce: nonce recibido")
+
         if (nonce.isBlank()) {
 
             errorCallback.value(
@@ -63,6 +81,8 @@ actual fun rememberGoogleSignInLauncher(
 
                 try {
 
+                    logGoogleSignIn("Creación del GetSignInWithGoogleOption")
+
                     val googleIdOption =
                         GetSignInWithGoogleOption
                             .Builder(
@@ -73,6 +93,8 @@ actual fun rememberGoogleSignInLauncher(
                             )
                             .build()
 
+                    logGoogleSignIn("Creación del GetCredentialRequest")
+
                     val request =
                         GetCredentialRequest
                             .Builder()
@@ -81,14 +103,20 @@ actual fun rememberGoogleSignInLauncher(
                             )
                             .build()
 
+                    logGoogleSignIn("Inicio de la llamada a credentialManager.getCredential()")
+
                     val result =
                         credentialManager.getCredential(
                             context = context,
                             request = request
                         )
 
+                    logGoogleSignIn("Respuesta de Credential Manager recibida")
+
                     val credential =
                         result.credential
+
+                    logGoogleSignIn("Tipo de credencial recibida = ${credential?.javaClass?.simpleName ?: "null"}")
 
                     if (
                         credential is CustomCredential &&
@@ -96,6 +124,8 @@ actual fun rememberGoogleSignInLauncher(
                         GoogleIdTokenCredential
                             .TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
                     ) {
+
+                        logGoogleSignIn("Inicio de la conversión con GoogleIdTokenCredential.createFrom()")
 
                         val googleCredential =
                             GoogleIdTokenCredential
@@ -106,11 +136,21 @@ actual fun rememberGoogleSignInLauncher(
                         val idToken =
                             googleCredential.idToken
 
+                        if (idToken.isBlank()) {
+                            logGoogleSignIn("ID Token: vacío")
+                        } else {
+                            logGoogleSignIn("ID Token: extraído correctamente")
+                        }
+
+                        logGoogleSignIn("Invocando successCallback de autenticación con Google")
+
                         successCallback.value(
                             idToken
                         )
 
                     } else {
+
+                        logGoogleSignIn("Tipo de credencial no válido o no soportado")
 
                         errorCallback.value(
                             "No se pudo obtener la cuenta de Google"
@@ -121,6 +161,8 @@ actual fun rememberGoogleSignInLauncher(
                     e: GetCredentialCancellationException
                 ) {
 
+                    logGoogleSignInError("GetCredentialCancellationException", e)
+
                     errorCallback.value(
                         "Inicio de sesión cancelado"
                     )
@@ -128,6 +170,8 @@ actual fun rememberGoogleSignInLauncher(
                 } catch (
                     e: GoogleIdTokenParsingException
                 ) {
+
+                    logGoogleSignInError("GoogleIdTokenParsingException", e)
 
                     errorCallback.value(
                         "No se pudo procesar la cuenta de Google"
@@ -137,6 +181,9 @@ actual fun rememberGoogleSignInLauncher(
                     e: GetCredentialException
                 ) {
 
+                    logGoogleSignInError("GetCredentialException", e)
+                    logGoogleSignIn("Excepción capturada en Credential Manager: clase=${e.javaClass.name}, mensaje=${e.message}")
+
                     errorCallback.value(
                         "No se pudo iniciar sesión con Google"
                     )
@@ -145,11 +192,15 @@ actual fun rememberGoogleSignInLauncher(
                     e: CancellationException
                 ) {
 
+                    logGoogleSignIn("CancellationException capturada: clase=${e.javaClass.name}")
+
                     throw e
 
                 } catch (
                     e: Exception
                 ) {
+
+                    logGoogleSignInError("Excepción no controlada capturada", e)
 
                     errorCallback.value(
                         "No se pudo conectar con Google"
