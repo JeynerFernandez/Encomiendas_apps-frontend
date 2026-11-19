@@ -24,6 +24,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import pe.edu.pe.presentation.theme.*
+import androidx.compose.ui.tooling.preview.Preview
+
+@Preview
+@Composable
+fun CotizacionPreview() {
+    MandaYaTheme {
+        CalculadoraCostoScreen()
+    }
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
