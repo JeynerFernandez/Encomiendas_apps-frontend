@@ -7,6 +7,12 @@ import pe.edu.pe.domain.model.User
 class GoogleLinkRequiredException(
     message: String
 ) : Exception(message)
+
+class AuthHttpException(
+    val statusCode: Int,
+    message: String
+) : Exception(message)
+
 interface AuthRepository {
     suspend fun login(
         email: String,
@@ -21,4 +27,6 @@ interface AuthRepository {
         idToken: String,
         password: String
     ): Result<User>
+
+    suspend fun getCurrentUser(): Result<User>
 }

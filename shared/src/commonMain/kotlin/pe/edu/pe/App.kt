@@ -87,6 +87,10 @@ private fun MandaYaApp() {
     var fontSizeScale by remember { mutableStateOf(1.0f) }
     var isLoggedIn by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        authViewModel.restoreSession()
+    }
+
     LaunchedEffect(authState) {
         when (val state = authState) {
             is AuthState.Success -> {
@@ -108,6 +112,18 @@ private fun MandaYaApp() {
                 }
                 authViewModel.resetState()
             }
+
+            AuthState.NoSession,
+            is AuthState.SessionExpired -> {
+                currentUser = null
+                isLoggedIn = false
+                currentScreen = Screen.Login
+            }
+
+            is AuthState.SessionRestoreError -> {
+                currentScreen = Screen.Splash
+            }
+
             else -> Unit
         }
     }
@@ -137,9 +153,39 @@ private fun MandaYaApp() {
         ) {
             when (currentScreen) {
                 is Screen.Splash -> {
-                    SplashContent(
-                        onTimeout = { currentScreen = Screen.Login }
-                    )
+                    val restoreError = authState as? AuthState.SessionRestoreError
+
+                    if (restoreError == null) {
+                        SplashContent(
+                            onTimeout = {
+                                if (
+                                    authState is AuthState.NoSession ||
+                                    authState is AuthState.SessionExpired
+                                ) {
+                                    currentScreen = Screen.Login
+                                }
+                            }
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "No se pudo restaurar la sesión"
+                            )
+                            Text(
+                                text = restoreError.message
+                            )
+                            TextButton(
+                                onClick = {
+                                    authViewModel.restoreSession()
+                                }
+                            ) {
+                                Text("Reintentar")
+                            }
+                        }
+                    }
                 }
 
                 is Screen.Login -> {

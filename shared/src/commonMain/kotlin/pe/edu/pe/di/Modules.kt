@@ -21,6 +21,7 @@ import pe.edu.pe.data.repository.SedeRepositoryImpl
 
 import pe.edu.pe.domain.UseCase.EntregaRecepcionUseCase
 import pe.edu.pe.domain.UseCase.GetNotificationSettingsUseCase
+import pe.edu.pe.domain.UseCase.GetCurrentUserUseCase
 import pe.edu.pe.domain.UseCase.GetPersonaByDniUseCase
 import pe.edu.pe.domain.UseCase.GetPersonasUseCase
 import pe.edu.pe.domain.UseCase.GetSedesUseCase
@@ -220,6 +221,14 @@ val appModule = module {
 
     factory {
 
+        GetCurrentUserUseCase(
+            repository = get()
+        )
+
+    }
+
+    factory {
+
         GetSedesUseCase(
             get()
         )
@@ -273,7 +282,9 @@ val appModule = module {
             loginUseCase = get(),
             googleChallengeUseCase = get(),
             googleLoginUseCase = get(),
-            googleLinkUseCase = get()
+            googleLinkUseCase = get(),
+            getCurrentUserUseCase = get(),
+            sessionManager = get()
         )
 
     }

@@ -3,14 +3,18 @@ package pe.edu.pe.data.repository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.CancellationException
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -22,8 +26,10 @@ import pe.edu.pe.Datas.remote.dto.GoogleChallengeDto
 import pe.edu.pe.Datas.remote.dto.GoogleLinkDto
 import pe.edu.pe.Datas.remote.dto.GoogleLoginDto
 import pe.edu.pe.Datas.remote.dto.LoginRequest
+import pe.edu.pe.Datas.remote.dto.UserDto
 import pe.edu.pe.Datas.remote.mapper.toDomain
 import pe.edu.pe.domain.model.User
+import pe.edu.pe.domain.repository.AuthHttpException
 import pe.edu.pe.domain.repository.AuthRepository
 import pe.edu.pe.domain.repository.GoogleLinkRequiredException
 
@@ -221,6 +227,44 @@ class AuthRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun getCurrentUser(): Result<User> {
+        val token = sessionManager.getToken()
+
+        if (token.isNullOrBlank()) {
+            return Result.failure(
+                IllegalStateException("No hay un token de autenticación almacenado")
+            )
+        }
+
+        return try {
+            val response = client.get("$baseUrl/auth/me") {
+                expectSuccess = false
+                header(
+                    HttpHeaders.Authorization,
+                    "Bearer $token"
+                )
+            }
+
+            if (!response.status.isSuccess()) {
+                Result.failure(obtenerError(response, includeStatus = true))
+            } else {
+                val user = response.body<UserDto>().toDomain()
+                sessionManager.saveUser(user)
+                Result.success(user)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SerializationException) {
+            Result.failure(
+                IllegalStateException("La respuesta del usuario autenticado no es válida", e)
+            )
+        } catch (e: Exception) {
+            // Los errores de conexión o servidor no eliminan la sesión existente.
+            Result.failure(e)
+        }
+    }
+
     private suspend fun procesarRespuestaGoogle(
         response: HttpResponse
     ): Result<User> {
@@ -263,7 +307,8 @@ class AuthRepositoryImpl(
     }
 
     private suspend fun obtenerError(
-        response: HttpResponse
+        response: HttpResponse,
+        includeStatus: Boolean = false
     ): Exception {
 
         val responseText =
@@ -301,8 +346,13 @@ class AuthRepositoryImpl(
             )
         }
 
-        return Exception(
-            message
-        )
+        return if (includeStatus) {
+            AuthHttpException(
+                statusCode = response.status.value,
+                message = message
+            )
+        } else {
+            Exception(message)
+        }
     }
 }

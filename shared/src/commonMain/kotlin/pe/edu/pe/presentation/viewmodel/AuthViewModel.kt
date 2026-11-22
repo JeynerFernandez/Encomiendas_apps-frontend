@@ -3,15 +3,19 @@ package pe.edu.pe.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import pe.edu.pe.Datas.local.SessionManager
+import pe.edu.pe.domain.UseCase.GetCurrentUserUseCase
 import pe.edu.pe.domain.UseCase.LoginUseCase
 import pe.edu.pe.domain.UseCase.GoogleChallengeUseCase
 import pe.edu.pe.domain.UseCase.GoogleLoginUseCase
 import pe.edu.pe.domain.UseCase.GoogleLinkUseCase
 import pe.edu.pe.domain.model.User
+import pe.edu.pe.domain.repository.AuthHttpException
 import pe.edu.pe.domain.repository.GoogleLinkRequiredException
 
 sealed class AuthState {
@@ -28,6 +32,18 @@ sealed class AuthState {
         val message: String
     ) : AuthState()
 
+    object RestoringSession : AuthState()
+
+    object NoSession : AuthState()
+
+    data class SessionExpired(
+        val message: String
+    ) : AuthState()
+
+    data class SessionRestoreError(
+        val message: String
+    ) : AuthState()
+
     data class GoogleChallengeReady(
         val nonce: String
     ) : AuthState()
@@ -41,6 +57,7 @@ sealed class AuthState {
     val isBusy: Boolean
         get() =
             this is Loading ||
+                    this is RestoringSession ||
                     this is GoogleChallengeReady ||
                     this is GoogleAwaitingCredential
 }
@@ -57,7 +74,13 @@ class AuthViewModel(
     GoogleLoginUseCase,
 
     private val googleLinkUseCase:
-    GoogleLinkUseCase
+    GoogleLinkUseCase,
+
+    private val getCurrentUserUseCase:
+    GetCurrentUserUseCase,
+
+    private val sessionManager:
+    SessionManager
 
 ) : ViewModel() {
 
@@ -112,6 +135,44 @@ class AuthViewModel(
                                 ?: "Error al iniciar sesión"
                         )
                 }
+        }
+    }
+
+    fun restoreSession() {
+        if (_state.value.isBusy) {
+            return
+        }
+
+        _state.value = AuthState.RestoringSession
+
+        viewModelScope.launch {
+            val token = sessionManager.getToken()
+
+            if (token.isNullOrBlank()) {
+                _state.value = AuthState.NoSession
+                return@launch
+            }
+
+            try {
+                getCurrentUserUseCase()
+                    .onSuccess { user ->
+                        _state.value = AuthState.Success(user)
+                    }
+                    .onFailure { error ->
+                        if (error is AuthHttpException && error.statusCode == 401) {
+                            sessionManager.clear()
+                            _state.value = AuthState.SessionExpired(
+                                error.message ?: "La sesión ha expirado"
+                            )
+                        } else {
+                            _state.value = AuthState.SessionRestoreError(
+                                error.message ?: "No se pudo restaurar la sesión"
+                            )
+                        }
+                    }
+            } catch (e: CancellationException) {
+                throw e
+            }
         }
     }
 
