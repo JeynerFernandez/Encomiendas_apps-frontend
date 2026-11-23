@@ -27,7 +27,7 @@ class SessionManager(
         )
     }
 
-    // Recupera el JWT para enviarlo a endpoints protegidos
+    // Recupera el JWT para enviarlo a endpoints proteg idos
     fun getToken(): String? {
 
         val token =

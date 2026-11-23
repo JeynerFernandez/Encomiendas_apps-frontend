@@ -24,6 +24,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import pe.edu.pe.presentation.theme.*
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import androidx.compose.ui.tooling.preview.Preview
 
 @Preview
@@ -55,6 +58,11 @@ fun CalculadoraCostoScreen(
     var mostrarResultado by remember { mutableStateOf(false) }
     var costoCalculado by remember { mutableStateOf(0.0) }
     var mensajeError by remember { mutableStateOf("") }
+    var isErrorMessageVisible by remember { mutableStateOf(true) }
+
+    LaunchedEffect(mensajeError) {
+        isErrorMessageVisible = true
+    }
 
 
     val sedesDisponibles = listOf(
@@ -412,13 +420,17 @@ fun CalculadoraCostoScreen(
             ScaledText("CALCULAR COSTO", fontSize = 16f, fontWeight = FontWeight.Bold)
         }
 
-        if (mensajeError.isNotBlank()) {
+        if (mensajeError.isNotBlank() && isErrorMessageVisible) {
             Spacer(modifier = Modifier.height(8.dp))
-            ScaledText(
-                text = mensajeError,
-                color = Color(0xFFE53935),
-                fontSize = 13f,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+            InlineMessage(
+                message = InlineMessageModel(
+                    type = InlineMessageType.ERROR,
+                    description = mensajeError,
+                    dismissible = true,
+                    onDismiss = {
+                        isErrorMessageVisible = false
+                    }
+                )
             )
         }
 

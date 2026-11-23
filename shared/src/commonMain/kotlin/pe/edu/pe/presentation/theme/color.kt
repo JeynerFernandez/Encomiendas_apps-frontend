@@ -1,8 +1,23 @@
 package pe.edu.pe.presentation.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+
+data class MandaYaSemanticColors(
+    val successContainer: Color,
+    val onSuccessContainer: Color,
+    val success: Color
+)
+
+val LocalMandaYaSemanticColors = staticCompositionLocalOf {
+    MandaYaSemanticColors(
+        successContainer = Color(0xFFDDF6E5),
+        onSuccessContainer = Color(0xFF0B3D20),
+        success = Color(0xFF2E7D4F)
+    )
+}
 
 // Colores fijos
 val Navy2 = Color(0xFF1B3F63)

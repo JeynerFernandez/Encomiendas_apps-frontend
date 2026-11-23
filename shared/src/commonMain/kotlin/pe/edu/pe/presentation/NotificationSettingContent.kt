@@ -10,6 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.unit.dp
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.viewmodel.NotificationSettingsViewModel
 
 
@@ -79,11 +82,15 @@ fun NotificationSettingsContent(
 
             state.feedbackMessage?.let { message ->
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    text = message,
-                    color = if (state.isFeedBackError) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium
+                InlineMessage(
+                    message = InlineMessageModel(
+                        type = if (state.isFeedBackError) {
+                            InlineMessageType.ERROR
+                        } else {
+                            InlineMessageType.SUCCESS
+                        },
+                        description = message
+                    )
                 )
             }
 

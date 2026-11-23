@@ -63,6 +63,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.edu.pe.domain.model.Ruta
 import pe.edu.pe.domain.model.Sede
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.theme.Border
 import pe.edu.pe.presentation.theme.Ink
 import pe.edu.pe.presentation.theme.LightBackground
@@ -357,16 +360,13 @@ fun GestionRutasAdminContent(
             mensaje != null
         ) {
 
-            MensajeRuta(
-                texto =
-                    mensaje,
-                esError =
-                    false,
-                onCerrar = {
-
-                    viewModel
-                        .limpiarMensaje()
-                }
+            InlineMessage(
+                message = InlineMessageModel(
+                    type = InlineMessageType.SUCCESS,
+                    description = mensaje,
+                    dismissible = true,
+                    onDismiss = viewModel::limpiarMensaje
+                )
             )
 
             Spacer(
@@ -385,16 +385,13 @@ fun GestionRutasAdminContent(
             !uiState.mostrarFormulario
         ) {
 
-            MensajeRuta(
-                texto =
-                    error,
-                esError =
-                    true,
-                onCerrar = {
-
-                    viewModel
-                        .limpiarMensaje()
-                }
+            InlineMessage(
+                message = InlineMessageModel(
+                    type = InlineMessageType.ERROR,
+                    description = error,
+                    dismissible = true,
+                    onDismiss = viewModel::limpiarMensaje
+                )
             )
 
             Spacer(
@@ -1857,105 +1854,6 @@ private fun EstadoRuta(
             color =
                 textoColor
         )
-    }
-}
-
-@Composable
-private fun MensajeRuta(
-    texto: String,
-    esError: Boolean,
-    onCerrar: () -> Unit
-) {
-
-    val fondo =
-        if (
-            esError
-        ) {
-            Color(
-                0xFFFFEBEE
-            )
-        } else {
-            NavySoft
-        }
-
-    val colorTexto =
-        if (
-            esError
-        ) {
-            Color(
-                0xFFC62828
-            )
-        } else {
-            Navy
-        }
-
-    Card(
-        modifier =
-            Modifier.fillMaxWidth(),
-        shape =
-            RoundedCornerShape(
-                12.dp
-            ),
-        colors =
-            CardDefaults
-                .cardColors(
-                    containerColor =
-                        fondo
-                ),
-        border =
-            BorderStroke(
-                width =
-                    1.dp,
-                color =
-                    if (
-                        esError
-                    ) {
-                        Color(
-                            0xFFEF9A9A
-                        )
-                    } else {
-                        Navy
-                    }
-            )
-    ) {
-
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        12.dp
-                    ),
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-
-            Text(
-                text =
-                    texto,
-                modifier =
-                    Modifier.weight(
-                        1f
-                    ),
-                fontSize =
-                    13.sp,
-                color =
-                    colorTexto
-            )
-
-            TextButton(
-                onClick =
-                    onCerrar
-            ) {
-
-                Text(
-                    text =
-                        "Cerrar",
-                    color =
-                        colorTexto
-                )
-            }
-        }
     }
 }
 

@@ -30,6 +30,10 @@ import kotlin.math.roundToLong
 import org.koin.compose.viewmodel.koinViewModel
 import pe.edu.pe.domain.model.Sede
 import pe.edu.pe.presentation.theme.*
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageAction
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.viewmodel.SedeState
 import pe.edu.pe.presentation.viewmodel.SedeViewModel
 import pe.edu.pe.presentation.viewmodel.TarifaState
@@ -516,69 +520,16 @@ fun GestionTarifasAdminContent(
 
 
             is TarifaState.Error -> {
-
-                Card(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor =
-                                Color(
-                                    0xFFFFEBEE
-                                )
+                InlineMessage(
+                    message = InlineMessageModel(
+                        type = InlineMessageType.ERROR,
+                        description = currentState.message,
+                        action = InlineMessageAction(
+                            label = "Reintentar",
+                            onClick = tarifaViewModel::getTarifas
                         )
-                ) {
-
-                    Column(
-                        modifier =
-                            Modifier.padding(
-                                16.dp
-                            )
-                    ) {
-
-                        Text(
-                            text =
-                                currentState.message,
-
-                            color =
-                                Color(
-                                    0xFFE53935
-                                ),
-
-                            fontSize =
-                                14.sp
-                        )
-
-
-                        Spacer(
-                            modifier =
-                                Modifier.height(10.dp)
-                        )
-
-
-                        Button(
-                            onClick = {
-
-                                tarifaViewModel
-                                    .getTarifas()
-                            },
-
-                            colors =
-                                ButtonDefaults
-                                    .buttonColors(
-                                        containerColor =
-                                            Navy
-                                    )
-                        ) {
-
-                            Text(
-                                text =
-                                    "Reintentar"
-                            )
-                        }
-                    }
-                }
+                    )
+                )
             }
 
 

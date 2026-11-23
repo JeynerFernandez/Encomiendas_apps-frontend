@@ -51,6 +51,9 @@ import pe.edu.pe.presentation.theme.Muted
 import pe.edu.pe.presentation.theme.Navy
 import pe.edu.pe.presentation.theme.NavySoft
 import pe.edu.pe.presentation.theme.Surface
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.viewmodel.AlmacenViewModel
 
 @Composable
@@ -446,67 +449,14 @@ fun WarehouseScreen(
             mensaje != null
         ) {
 
-            Card(
-                modifier =
-                    Modifier.fillMaxWidth(),
-                shape =
-                    RoundedCornerShape(
-                        14.dp
-                    ),
-                border =
-                    BorderStroke(
-                        1.dp,
-                        Navy
-                    ),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor =
-                            NavySoft
-                    )
-            ) {
-
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                14.dp
-                            ),
-                    verticalAlignment =
-                        Alignment.CenterVertically
-                ) {
-
-                    Text(
-                        text =
-                            mensaje,
-                        modifier =
-                            Modifier.weight(
-                                1f
-                            ),
-                        fontSize =
-                            13.sp,
-                        fontWeight =
-                            FontWeight.Medium,
-                        color =
-                            Navy
-                    )
-
-                    TextButton(
-                        onClick = {
-
-                            viewModel.limpiarMensaje()
-                        }
-                    ) {
-
-                        Text(
-                            text =
-                                "Cerrar",
-                            color =
-                                Navy
-                        )
-                    }
-                }
-            }
+            InlineMessage(
+                message = InlineMessageModel(
+                    type = InlineMessageType.SUCCESS,
+                    description = mensaje,
+                    dismissible = true,
+                    onDismiss = viewModel::limpiarMensaje
+                )
+            )
 
             Spacer(
                 modifier =
@@ -523,65 +473,14 @@ fun WarehouseScreen(
             error != null
         ) {
 
-            Card(
-                modifier =
-                    Modifier.fillMaxWidth(),
-                shape =
-                    RoundedCornerShape(
-                        14.dp
-                    ),
-                border =
-                    BorderStroke(
-                        1.dp,
-                        Border
-                    ),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor =
-                            Surface
-                    )
-            ) {
-
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                14.dp
-                            ),
-                    verticalAlignment =
-                        Alignment.CenterVertically
-                ) {
-
-                    Text(
-                        text =
-                            error,
-                        modifier =
-                            Modifier.weight(
-                                1f
-                            ),
-                        fontSize =
-                            13.sp,
-                        color =
-                            Muted
-                    )
-
-                    TextButton(
-                        onClick = {
-
-                            viewModel.limpiarMensaje()
-                        }
-                    ) {
-
-                        Text(
-                            text =
-                                "Cerrar",
-                            color =
-                                Navy
-                        )
-                    }
-                }
-            }
+            InlineMessage(
+                message = InlineMessageModel(
+                    type = InlineMessageType.ERROR,
+                    description = error,
+                    dismissible = true,
+                    onDismiss = viewModel::limpiarMensaje
+                )
+            )
 
             Spacer(
                 modifier =

@@ -71,6 +71,9 @@ import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import pe.edu.pe.domain.model.DetalleEncomiendaMovilidad
 import pe.edu.pe.domain.model.TrasladoMovilidad
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.theme.InputBorder
 import pe.edu.pe.presentation.theme.LightBackground
 import pe.edu.pe.presentation.theme.SurfaceWhite
@@ -506,7 +509,9 @@ fun MiRutaScreenContent(
 
             MensajesMovilidad(
                 uiState =
-                    uiState
+                    uiState,
+                onDismiss =
+                    viewModel::limpiarMensajes
             )
 
             Spacer(
@@ -1517,7 +1522,9 @@ fun BajarScreenContent(
 
             MensajesMovilidad(
                 uiState =
-                    uiState
+                    uiState,
+                onDismiss =
+                    viewModel::limpiarMensajes
             )
 
             Spacer(
@@ -1929,7 +1936,9 @@ fun ReporteScreenContent(
 
             MensajesMovilidad(
                 uiState =
-                    uiState
+                    uiState,
+                onDismiss =
+                    viewModel::limpiarMensajes
             )
 
             Spacer(
@@ -2810,7 +2819,8 @@ fun EstadoVacio(
 
 @Composable
 fun MensajesMovilidad(
-    uiState: MovilidadUiState
+    uiState: MovilidadUiState,
+    onDismiss: () -> Unit = {}
 ) {
 
     if (
@@ -2859,140 +2869,30 @@ fun MensajesMovilidad(
         uiState.error
             .isNotBlank()
     ) {
-
-        Card(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top =
-                            10.dp
-                    ),
-
-            colors =
-                CardDefaults
-                    .cardColors(
-                        containerColor =
-                            Color(
-                                0xFFFFEBEE
-                            )
-                    )
-        ) {
-
-            Row(
-                modifier =
-                    Modifier.padding(
-                        14.dp
-                    ),
-
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                Icon(
-                    imageVector =
-                        Icons.Default.ErrorOutline,
-
-                    contentDescription =
-                        "Error",
-
-                    tint =
-                        Color(
-                            0xFFC62828
-                        )
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(
-                            10.dp
-                        )
-                )
-
-                Text(
-                    text =
-                        uiState.error,
-
-                    color =
-                        Color(
-                            0xFFC62828
-                        ),
-
-                    fontSize =
-                        13.sp
-                )
-            }
-        }
+        InlineMessage(
+            modifier = Modifier.padding(top = 10.dp),
+            message = InlineMessageModel(
+                type = InlineMessageType.ERROR,
+                description = uiState.error,
+                dismissible = true,
+                onDismiss = onDismiss
+            )
+        )
     }
 
     if (
         uiState.mensaje
             .isNotBlank()
     ) {
-
-        Card(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top =
-                            10.dp
-                    ),
-
-            colors =
-                CardDefaults
-                    .cardColors(
-                        containerColor =
-                            Color(
-                                0xFFE8F5E9
-                            )
-                    )
-        ) {
-
-            Row(
-                modifier =
-                    Modifier.padding(
-                        14.dp
-                    ),
-
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                Icon(
-                    imageVector =
-                        Icons.Default.Check,
-
-                    contentDescription =
-                        "Correcto",
-
-                    tint =
-                        Color(
-                            0xFF2E7D32
-                        )
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(
-                            10.dp
-                        )
-                )
-
-                Text(
-                    text =
-                        uiState.mensaje,
-
-                    color =
-                        Color(
-                            0xFF2E7D32
-                        ),
-
-                    fontSize =
-                        13.sp
-                )
-            }
-        }
+        InlineMessage(
+            modifier = Modifier.padding(top = 10.dp),
+            message = InlineMessageModel(
+                type = InlineMessageType.SUCCESS,
+                description = uiState.mensaje,
+                dismissible = true,
+                onDismiss = onDismiss
+            )
+        )
     }
 }
 

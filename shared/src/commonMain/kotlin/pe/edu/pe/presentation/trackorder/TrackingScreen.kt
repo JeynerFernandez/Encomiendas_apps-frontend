@@ -32,8 +32,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +57,9 @@ import pe.edu.pe.presentation.theme.Navy
 import pe.edu.pe.presentation.theme.NavySoft
 import pe.edu.pe.presentation.theme.ScaledText
 
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.viewmodel.TrackingViewModel
 
 
@@ -67,6 +74,14 @@ fun TrackingScreen(
     val state by
     viewModel.uiState
         .collectAsState()
+
+    var isErrorMessageVisible by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(state.error) {
+        isErrorMessageVisible = true
+    }
 
 
     Column(
@@ -495,24 +510,19 @@ fun TrackingScreen(
 
 
             if (
-                state.error
-                    .isNotBlank()
+                state.error.isNotBlank() &&
+                isErrorMessageVisible
             ) {
-
-                ScaledText(
-                    text =
-                        state.error,
-
-                    color =
-                        Color(
-                            0xFFE53935
-                        ),
-
-                    fontSize =
-                        13f,
-
-                    fontWeight =
-                        FontWeight.Medium
+                InlineMessage(
+                    message = InlineMessageModel(
+                        type = InlineMessageType.ERROR,
+                        title = "No se pudo rastrear la encomienda",
+                        description = state.error,
+                        dismissible = true,
+                        onDismiss = {
+                            isErrorMessageVisible = false
+                        }
+                    )
                 )
             }
 

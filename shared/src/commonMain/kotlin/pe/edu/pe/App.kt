@@ -40,6 +40,7 @@ import pe.edu.pe.presentation.ReportesAdminContent
 import pe.edu.pe.presentation.Screen
 import pe.edu.pe.presentation.SplashContent
 import pe.edu.pe.presentation.movilidad.MovilidadScreen
+import pe.edu.pe.presentation.notifications.RemoteNotificationsScreen
 import pe.edu.pe.presentation.reception.ReceptionScreen
 import pe.edu.pe.presentation.reception.delivery.PendientesEntregaScreen
 import pe.edu.pe.presentation.reception.register.RegisterShipmentScreen
@@ -53,6 +54,7 @@ import pe.edu.pe.presentation.viewmodel.AuthState
 import pe.edu.pe.presentation.viewmodel.AuthViewModel
 import pe.edu.pe.presentation.viewmodel.NotificationSettingsViewModel
 import pe.edu.pe.presentation.viewmodel.RutaViewModel
+import pe.edu.pe.presentation.viewmodel.RemoteNotificationsViewModel
 import pe.edu.pe.presentation.warehouse.WarehouseScreen
 
 private const val GOOGLE_WEB_CLIENT_ID = "277251979945-l3vt6mmkbevq5sbd2447nvtvqu4rd38b.apps.googleusercontent.com"
@@ -78,17 +80,29 @@ fun App(
 @Composable
 private fun MandaYaApp() {
     val authViewModel = koinViewModel<AuthViewModel>()
+    val remoteNotificationsViewModel = koinViewModel<RemoteNotificationsViewModel>()
     val sessionManager = koinInject<SessionManager>()
     val authState by authViewModel.state.collectAsState()
+    val remoteNotificationsState by remoteNotificationsViewModel.uiState.collectAsState()
 
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Splash) }
     var currentUser by remember { mutableStateOf<User?>(null) }
     var isDarkMode by remember { mutableStateOf(false) }
     var fontSizeScale by remember { mutableStateOf(1.0f) }
     var isLoggedIn by remember { mutableStateOf(false) }
+    val notificationsRoleEnabled =
+        isLoggedIn && currentUser?.role?.uppercase() == "CLIENTE"
 
     LaunchedEffect(Unit) {
         authViewModel.restoreSession()
+    }
+
+    LaunchedEffect(isLoggedIn, currentUser?.role) {
+        if (notificationsRoleEnabled) {
+            remoteNotificationsViewModel.loadNotifications()
+        } else {
+            remoteNotificationsViewModel.clearNotifications()
+        }
     }
 
     LaunchedEffect(authState) {
@@ -105,6 +119,7 @@ private fun MandaYaApp() {
                     "ALMACEN" -> Screen.Warehouse
                     else -> {
                         sessionManager.clear()
+                        remoteNotificationsViewModel.clearNotifications()
                         isLoggedIn = false
                         currentUser = null
                         Screen.Login
@@ -115,6 +130,7 @@ private fun MandaYaApp() {
 
             AuthState.NoSession,
             is AuthState.SessionExpired -> {
+                remoteNotificationsViewModel.clearNotifications()
                 currentUser = null
                 isLoggedIn = false
                 currentScreen = Screen.Login
@@ -277,6 +293,7 @@ private fun MandaYaApp() {
                         isLoggedIn = isLoggedIn,
                         onLogout = {
                             sessionManager.clear()
+                            remoteNotificationsViewModel.clearNotifications()
                             isLoggedIn = false
                             currentUser = null
                             currentScreen = Screen.Login
@@ -289,6 +306,8 @@ private fun MandaYaApp() {
                         onSettingsClick = { currentScreen = Screen.Ajustes },
                         cartSize = 0,
                         onSettingsClicked = { currentScreen = Screen.NotificationSetting },
+                        onNotificationsClick = { currentScreen = Screen.RemoteNotifications },
+                        remoteNotificationsState = remoteNotificationsState,
                         currentUser = currentUser
                     )
                 }
@@ -323,6 +342,13 @@ private fun MandaYaApp() {
                     )
                 }
 
+                is Screen.RemoteNotifications -> {
+                    RemoteNotificationsScreen(
+                        viewModel = remoteNotificationsViewModel,
+                        onBack = { currentScreen = Screen.Home }
+                    )
+                }
+
                 is Screen.CalcularEncomienda -> {
                     CalculadoraCostoScreen(
                         onSalirClick = { currentScreen = Screen.Home }
@@ -347,6 +373,7 @@ private fun MandaYaApp() {
                         onProfileClick = {},
                         onLogout = {
                             sessionManager.clear()
+                            remoteNotificationsViewModel.clearNotifications()
                             isLoggedIn = false
                             currentUser = null
                             currentScreen = Screen.Login
@@ -406,6 +433,7 @@ private fun MandaYaApp() {
                         onProfile = {},
                         onLogout = {
                             sessionManager.clear()
+                            remoteNotificationsViewModel.clearNotifications()
                             isLoggedIn = false
                             currentUser = null
                             currentScreen = Screen.Login
@@ -468,6 +496,7 @@ private fun MandaYaApp() {
                         viewModel = almacenViewModel,
                         onBackClick = {
                             sessionManager.clear()
+                            remoteNotificationsViewModel.clearNotifications()
                             isLoggedIn = false
                             currentUser = null
                             currentScreen = Screen.Login

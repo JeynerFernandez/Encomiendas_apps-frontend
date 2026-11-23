@@ -43,6 +43,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +67,9 @@ import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import encomienda_appmovil.shared.generated.resources.Res
 import encomienda_appmovil.shared.generated.resources.logo_mandaya
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 
 
 @Composable
@@ -97,6 +101,14 @@ fun LoginScreen(
 
     var passwordVisible by remember {
         mutableStateOf(false)
+    }
+
+    var isErrorMessageVisible by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(errorMessage) {
+        isErrorMessageVisible = true
     }
 
 
@@ -516,7 +528,8 @@ fun LoginScreen(
 
 
             if (
-                !errorMessage.isNullOrBlank()
+                !errorMessage.isNullOrBlank() &&
+                isErrorMessageVisible
             ) {
 
                 Spacer(
@@ -524,23 +537,16 @@ fun LoginScreen(
                         Modifier.height(12.dp)
                 )
 
-                Text(
-                    text =
-                        errorMessage,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .error,
-
-                    fontSize =
-                        13.sp,
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    textAlign =
-                        TextAlign.Center
+                InlineMessage(
+                    message = InlineMessageModel(
+                        type = InlineMessageType.ERROR,
+                        title = "No se pudo iniciar sesión",
+                        description = errorMessage,
+                        dismissible = true,
+                        onDismiss = {
+                            isErrorMessageVisible = false
+                        }
+                    )
                 )
             }
 

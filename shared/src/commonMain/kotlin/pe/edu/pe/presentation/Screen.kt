@@ -42,4 +42,6 @@ sealed class Screen {
 
     object NotificationSetting: Screen()
 
+    object RemoteNotifications: Screen()
+
 }

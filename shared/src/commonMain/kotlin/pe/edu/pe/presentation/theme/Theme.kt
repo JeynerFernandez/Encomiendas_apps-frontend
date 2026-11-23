@@ -43,6 +43,18 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color.White
 )
 
+private val LightSemanticColors = MandaYaSemanticColors(
+    successContainer = Color(0xFFDDF6E5),
+    onSuccessContainer = Color(0xFF0B3D20),
+    success = Color(0xFF2E7D4F)
+)
+
+private val DarkSemanticColors = MandaYaSemanticColors(
+    successContainer = Color(0xFF1F4D32),
+    onSuccessContainer = Color(0xFFC6F3D2),
+    success = Color(0xFF8BD5A4)
+)
+
 
 @Composable
 fun MandaYaTheme(
@@ -73,7 +85,14 @@ fun MandaYaTheme(
         labelSmall = base.labelSmall.copy(fontSize = base.labelSmall.fontSize * fontSizeScale)
     )
 
-    CompositionLocalProvider(LocalFontSizeScale provides fontSizeScale) {
+    CompositionLocalProvider(
+        LocalFontSizeScale provides fontSizeScale,
+        LocalMandaYaSemanticColors provides if (darkTheme) {
+            DarkSemanticColors
+        } else {
+            LightSemanticColors
+        }
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = scaledTypography,

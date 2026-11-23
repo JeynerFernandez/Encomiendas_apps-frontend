@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Calculate
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pe.edu.pe.domain.model.User
 import pe.edu.pe.presentation.theme.*
+import pe.edu.pe.presentation.viewmodel.RemoteNotificationsUiState
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +55,8 @@ fun HomeContent(
     onSettingsClick: () -> Unit = {},
     cartSize: Int,
     onSettingsClicked: () -> Unit,
+    onNotificationsClick: () -> Unit = {},
+    remoteNotificationsState: RemoteNotificationsUiState = RemoteNotificationsUiState(),
     currentUser: User? = null
 ){
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -161,6 +165,27 @@ fun HomeContent(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onNotificationsClick){
+                            BadgedBox(badge = {
+                                if (remoteNotificationsState.unreadCount > 0) {
+                                    Badge(containerColor = Orange) {
+                                        Text(
+                                            if (remoteNotificationsState.unreadCount > 99) {
+                                                "99+"
+                                            } else {
+                                                remoteNotificationsState.unreadCount.toString()
+                                            }
+                                        )
+                                    }
+                                }
+                            }) {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = "Notificaciones",
+                                    tint = Color.White
+                                )
+                            }
+                        }
                         IconButton(onClick = onCartClick){
                             BadgedBox(badge ={
                                 if (cartSize>0){

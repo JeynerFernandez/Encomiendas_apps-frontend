@@ -25,7 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -56,6 +55,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.theme.*
 
 data class FaqItem(
@@ -74,6 +76,7 @@ fun SupportScreen(
     var subjectText by remember { mutableStateOf("") }
     var messageText by remember { mutableStateOf("") }
     var isSubmitted by remember { mutableStateOf(false) }
+    var showValidationError by remember { mutableStateOf(false) }
 
     val faqs = remember {
         listOf(
@@ -265,37 +268,37 @@ fun SupportScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (isSubmitted) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = Color(0xFF279B57),
-                                    modifier = Modifier.size(36.dp)
+                        if (showValidationError && !isSubmitted) {
+                            InlineMessage(
+                                message = InlineMessageModel(
+                                    type = InlineMessageType.ERROR,
+                                    description = "Por favor, completa todos los campos.",
+                                    dismissible = true,
+                                    onDismiss = {
+                                        showValidationError = false
+                                    }
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    ScaledText(
-                                        text = "¡Mensaje Enviado!",
-                                        fontWeight = FontWeight.Bold,
-                                        color = Ink,
-                                        fontSize = 15f
-                                    )
-                                    ScaledText(
-                                        text = "Nos pondremos en contacto contigo a la brevedad.",
-                                        fontSize = 12f,
-                                        color = Muted
-                                    )
-                                }
-                            }
+                            )
+                        }
+
+                        if (isSubmitted) {
+                            InlineMessage(
+                                message = InlineMessageModel(
+                                    type = InlineMessageType.SUCCESS,
+                                    title = "¡Mensaje Enviado!",
+                                    description = "Nos pondremos en contacto contigo a la brevedad.",
+                                    dismissible = true,
+                                    onDismiss = {
+                                        isSubmitted = false
+                                    }
+                                )
+                            )
                             Button(
                                 onClick = {
                                     isSubmitted = false
                                     subjectText = ""
                                     messageText = ""
+                                    showValidationError = false
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
@@ -344,10 +347,9 @@ fun SupportScreen(
                                 onClick = {
                                     if (subjectText.isNotBlank() && messageText.isNotBlank()) {
                                         isSubmitted = true
+                                        showValidationError = false
                                     } else {
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("Por favor, completa todos los campos.")
-                                        }
+                                        showValidationError = true
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().height(52.dp),

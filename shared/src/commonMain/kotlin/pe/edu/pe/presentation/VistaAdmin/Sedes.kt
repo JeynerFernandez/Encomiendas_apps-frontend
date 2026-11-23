@@ -25,6 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import pe.edu.pe.presentation.theme.*
+import pe.edu.pe.presentation.components.InlineMessage
+import pe.edu.pe.presentation.components.InlineMessageAction
+import pe.edu.pe.presentation.components.InlineMessageModel
+import pe.edu.pe.presentation.components.InlineMessageType
 import pe.edu.pe.presentation.viewmodel.SedeState
 import pe.edu.pe.presentation.viewmodel.SedeViewModel
 
@@ -419,71 +423,16 @@ fun GestionSedesAdminContent(
 
 
             is SedeState.Error -> {
-
-                Card(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor =
-                                Color(
-                                    0xFFFFEBEE
-                                )
+                InlineMessage(
+                    message = InlineMessageModel(
+                        type = InlineMessageType.ERROR,
+                        description = currentState.message,
+                        action = InlineMessageAction(
+                            label = "Reintentar",
+                            onClick = viewModel::getSedes
                         )
-                ) {
-
-                    Column(
-                        modifier =
-                            Modifier.padding(
-                                16.dp
-                            )
-                    ) {
-
-                        Text(
-                            text =
-                                currentState.message,
-
-                            color =
-                                Color(
-                                    0xFFE53935
-                                ),
-
-                            fontSize =
-                                14.sp
-                        )
-
-
-                        Spacer(
-                            modifier =
-                                Modifier.height(
-                                    10.dp
-                                )
-                        )
-
-
-                        Button(
-                            onClick = {
-
-                                // Vuelve a consultar las sedes
-                                viewModel.getSedes()
-                            },
-
-                            colors =
-                                ButtonDefaults
-                                    .buttonColors(
-                                        containerColor =
-                                            Navy
-                                    )
-                        ) {
-
-                            Text(
-                                text =
-                                    "Reintentar"
-                            )
-                        }
-                    }
-                }
+                    )
+                )
             }
 
 
