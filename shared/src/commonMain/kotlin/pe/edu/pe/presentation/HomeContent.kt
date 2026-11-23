@@ -17,14 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -48,12 +46,10 @@ fun HomeContent(
     isLoggedIn: Boolean,
     onLogout: ()-> Unit,
     onEditProfile: ()-> Unit,
-    onCartClick: ()-> Unit,
     onCalcularEncomienda: ()-> Unit,
     onSupportClick: ()-> Unit = {},
     onTrackingClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    cartSize: Int,
     onSettingsClicked: () -> Unit,
     onNotificationsClick: () -> Unit = {},
     remoteNotificationsState: RemoteNotificationsUiState = RemoteNotificationsUiState(),
@@ -61,7 +57,6 @@ fun HomeContent(
 ){
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    var selectedTab by remember { mutableStateOf(0) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -186,19 +181,6 @@ fun HomeContent(
                                 )
                             }
                         }
-                        IconButton(onClick = onCartClick){
-                            BadgedBox(badge ={
-                                if (cartSize>0){
-                                    Badge(containerColor = Orange) { Text("$cartSize") }
-                                }
-                            }){
-                                Icon(
-                                    Icons.Default.ShoppingCart,
-                                    contentDescription = "Carrito",
-                                    tint = Color.White
-                                )
-                            }
-                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Navy
@@ -211,23 +193,10 @@ fun HomeContent(
                     contentColor = Navy
                 ) {
                     NavigationBarItem(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
+                        selected = true,
+                        onClick = {},
                         icon = {Icon(Icons.Default.Home, null)},
                         label = { ScaledText("INICIO", fontSize = 12f) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Navy,
-                            selectedTextColor = Navy,
-                            indicatorColor = NavySoft,
-                            unselectedIconColor = Muted,
-                            unselectedTextColor = Muted
-                        )
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        icon = {Icon(Icons.Default.CalendarMonth, null)},
-                        label = { ScaledText("RESERVAS", fontSize = 12f) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Navy,
                             selectedTextColor = Navy,
@@ -248,7 +217,7 @@ fun HomeContent(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ScaledText(
-                    "Reservas App Manda ya",
+                    "Bienvenido a MandaYa",
                     fontSize = 20f,
                     fontWeight = FontWeight.Bold,
                     color = Ink,

@@ -299,12 +299,10 @@ private fun MandaYaApp() {
                             currentScreen = Screen.Login
                         },
                         onEditProfile = {},
-                        onCartClick = {},
                         onCalcularEncomienda = { currentScreen = Screen.CalcularEncomienda },
                         onSupportClick = { currentScreen = Screen.Support },
                         onTrackingClick = { currentScreen = Screen.Tracking },
                         onSettingsClick = { currentScreen = Screen.Ajustes },
-                        cartSize = 0,
                         onSettingsClicked = { currentScreen = Screen.NotificationSetting },
                         onNotificationsClick = { currentScreen = Screen.RemoteNotifications },
                         remoteNotificationsState = remoteNotificationsState,
