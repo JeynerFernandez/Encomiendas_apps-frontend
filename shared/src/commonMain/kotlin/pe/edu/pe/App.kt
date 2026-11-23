@@ -172,16 +172,7 @@ private fun MandaYaApp() {
                     val restoreError = authState as? AuthState.SessionRestoreError
 
                     if (restoreError == null) {
-                        SplashContent(
-                            onTimeout = {
-                                if (
-                                    authState is AuthState.NoSession ||
-                                    authState is AuthState.SessionExpired
-                                ) {
-                                    currentScreen = Screen.Login
-                                }
-                            }
-                        )
+                        SplashContent()
                     } else {
                         Column(
                             modifier = Modifier.fillMaxSize(),
