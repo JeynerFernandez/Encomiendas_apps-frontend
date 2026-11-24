@@ -3,12 +3,15 @@ package pe.edu.pe.Datas.repository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import pe.edu.pe.Datas.local.SessionManager
 import pe.edu.pe.Datas.remote.api.ApiClient
 import pe.edu.pe.Datas.remote.dto.CreateEncomiendaRequest
@@ -29,6 +32,29 @@ class EncomiendaRepositoryImpl(
 
     private val baseUrl =
         ApiClient.getBaseUrl()
+
+    override suspend fun obtenerTotalEncomiendas(): Result<Int> {
+        return try {
+            val token = sessionManager.getToken()
+
+            if (token.isNullOrBlank()) {
+                return Result.failure(Exception("No existe una sesión activa"))
+            }
+
+            val response = client.get("$baseUrl/encomienda") {
+                bearerAuth(token.removePrefix("Bearer ").trim())
+            }
+
+            if (response.status.isSuccess()) {
+                val encomiendas = Json.parseToJsonElement(response.bodyAsText()).jsonArray
+                Result.success(encomiendas.size)
+            } else {
+                Result.failure(Exception(response.bodyAsText()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
 
     override suspend fun registrarEncomienda(

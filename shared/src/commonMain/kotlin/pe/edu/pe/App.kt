@@ -21,7 +21,6 @@ import org.koin.dsl.module
 import pe.edu.pe.Datas.Notification.LocalNotificationPlataform
 import pe.edu.pe.Datas.Notification.UnsupportedLocalNotificationPlataform
 import pe.edu.pe.Datas.local.SessionManager
-import pe.edu.pe.data.repository.ShipmentRepository
 import pe.edu.pe.di.appModule
 import pe.edu.pe.domain.model.User
 import pe.edu.pe.presentation.AdminDashboardContent
@@ -55,6 +54,7 @@ import pe.edu.pe.presentation.viewmodel.AuthViewModel
 import pe.edu.pe.presentation.viewmodel.NotificationSettingsViewModel
 import pe.edu.pe.presentation.viewmodel.RutaViewModel
 import pe.edu.pe.presentation.viewmodel.RemoteNotificationsViewModel
+import pe.edu.pe.presentation.viewmodel.ReceptionViewModel
 import pe.edu.pe.presentation.warehouse.WarehouseScreen
 
 private const val GOOGLE_WEB_CLIENT_ID = "277251979945-l3vt6mmkbevq5sbd2447nvtvqu4rd38b.apps.googleusercontent.com"
@@ -81,6 +81,7 @@ fun App(
 private fun MandaYaApp() {
     val authViewModel = koinViewModel<AuthViewModel>()
     val remoteNotificationsViewModel = koinViewModel<RemoteNotificationsViewModel>()
+    val receptionViewModel = koinViewModel<ReceptionViewModel>()
     val sessionManager = koinInject<SessionManager>()
     val authState by authViewModel.state.collectAsState()
     val remoteNotificationsState by remoteNotificationsViewModel.uiState.collectAsState()
@@ -157,8 +158,6 @@ private fun MandaYaApp() {
     var shipmentBillableWeight by remember { mutableStateOf("") }
     var shipmentCost by remember { mutableStateOf("") }
     var shipmentPaymentMethod by remember { mutableStateOf("") }
-
-    val shipments = ShipmentRepository.shipments
 
     MandaYaTheme(
         darkTheme = isDarkMode,
@@ -415,6 +414,12 @@ private fun MandaYaApp() {
                 }
 
                 is Screen.Reception -> {
+                    val receptionState by receptionViewModel.state.collectAsState()
+
+                    LaunchedEffect(Unit) {
+                        receptionViewModel.loadCount()
+                    }
+
                     ReceptionScreen(
                         onRegisterShipment = { currentScreen = Screen.RegisterShipment },
                         onDeliverWarehouse = { currentScreen = Screen.DeliverWarehouse },
@@ -427,7 +432,9 @@ private fun MandaYaApp() {
                             currentUser = null
                             currentScreen = Screen.Login
                         },
-                        shipments = shipments
+                        totalEncomiendas = receptionState.totalEncomiendas,
+                        isLoading = receptionState.isLoading,
+                        errorMessage = receptionState.message
                     )
                 }
 
@@ -442,6 +449,7 @@ private fun MandaYaApp() {
                         onBack = { currentScreen = Screen.Reception },
                         recepcionSedeId = currentUser?.sedeId,
                         onShipmentGenerated = { code, password, sender, recipient, origin, destination, weight, height, width, length, billableWeight, cost, payment ->
+                            receptionViewModel.loadCount(force = true)
                             trackingCode = code
                             shipmentPassword = password
                             senderDni = sender

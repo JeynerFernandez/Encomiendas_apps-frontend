@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import pe.edu.pe.data.model.Shipment
 import pe.edu.pe.presentation.theme.*
 
 @Composable
@@ -50,7 +49,9 @@ fun ReceptionScreen(
     onHistory: () -> Unit,
     onProfile: () -> Unit,
     onLogout: () -> Unit,
-    shipments: List<Shipment>
+    totalEncomiendas: Int?,
+    isLoading: Boolean,
+    errorMessage: String?
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -142,10 +143,19 @@ fun ReceptionScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Encomiendas registradas: ${shipments.size}",
+            text = when {
+                isLoading -> "Encomiendas registradas: ..."
+                totalEncomiendas != null -> "Encomiendas registradas: $totalEncomiendas"
+                else -> "Encomiendas registradas: --"
+            },
             fontSize = 13.sp,
             color = Muted
         )
+
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = errorMessage, fontSize = 12.sp, color = ErrorRed)
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 

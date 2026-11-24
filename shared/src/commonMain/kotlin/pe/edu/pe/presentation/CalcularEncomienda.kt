@@ -23,17 +23,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import org.koin.compose.KoinApplication
+import org.koin.compose.viewmodel.koinViewModel
+import pe.edu.pe.di.appModule
 import pe.edu.pe.presentation.theme.*
 import pe.edu.pe.presentation.components.InlineMessage
 import pe.edu.pe.presentation.components.InlineMessageModel
 import pe.edu.pe.presentation.components.InlineMessageType
 import androidx.compose.ui.tooling.preview.Preview
+import pe.edu.pe.presentation.viewmodel.SedeState
+import pe.edu.pe.presentation.viewmodel.SedeViewModel
+import pe.edu.pe.presentation.viewmodel.TarifaState
+import pe.edu.pe.presentation.viewmodel.TarifaViewModel
 
 @Preview
 @Composable
 fun CotizacionPreview() {
-    MandaYaTheme {
-        CalculadoraCostoScreen()
+    KoinApplication(
+        application = {
+            modules(appModule)
+        }
+    ) {
+        MandaYaTheme {
+            CalculadoraCostoScreen()
+        }
     }
 }
 
@@ -41,7 +54,9 @@ fun CotizacionPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalculadoraCostoScreen(
-    onSalirClick: () -> Unit = {}
+    onSalirClick: () -> Unit = {},
+    sedeViewModel: SedeViewModel = koinViewModel(),
+    tarifaViewModel: TarifaViewModel = koinViewModel()
 ) {
 
     var largo by remember { mutableStateOf("") }
@@ -50,6 +65,8 @@ fun CalculadoraCostoScreen(
     var peso by remember { mutableStateOf("") }
     var origenSeleccionado by remember { mutableStateOf("") }
     var destinoSeleccionado by remember { mutableStateOf("") }
+    var origenIdSeleccionado by remember { mutableStateOf<Int?>(null) }
+    var destinoIdSeleccionado by remember { mutableStateOf<Int?>(null) }
     var tipoEnvio by remember { mutableStateOf("Paquete") }
 
     var origenExpandido by remember { mutableStateOf(false) }
@@ -60,42 +77,45 @@ fun CalculadoraCostoScreen(
     var mensajeError by remember { mutableStateOf("") }
     var isErrorMessageVisible by remember { mutableStateOf(true) }
 
+    val sedeState by sedeViewModel.state.collectAsState()
+    val tarifaState by tarifaViewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        sedeViewModel.getSedes()
+        tarifaViewModel.getTarifas()
+    }
+
     LaunchedEffect(mensajeError) {
         isErrorMessageVisible = true
     }
 
 
-    val sedesDisponibles = listOf(
-        "Tarapoto",
-        "Moyobamba",
-        "Rioja",
-        "Nueva Cajamarca",
-        "Pomacochas",
-        "Pedro Ruiz",
-        "Bagua Grande"
-    )
+    val sedesDisponibles = when (val state = sedeState) {
+        is SedeState.Success -> state.sedes.filter { it.active }
+        else -> emptyList()
+    }
 
 
-    fun calcularCosto(): Double {
-        val pesoRecomendado = 20.0
+    fun calcularCosto(): Double? {
         val pesoNum = peso.toDoubleOrNull() ?: 0.0
-
-        var tarifaBase = 0.0
-        if (pesoNum <= 5.0) tarifaBase = 10.0
-        else if (pesoNum <= 10.0) tarifaBase = 15.0
-        else if (pesoNum <= 20.0) tarifaBase = 25.0
-        else tarifaBase = 25.0
-
-        var excedente = 0.0
-        if (pesoNum > pesoRecomendado) {
-            val pesoExtra = pesoNum - pesoRecomendado
-            excedente = pesoExtra * 1.20
+        val tarifa = when (val state = tarifaState) {
+            is TarifaState.Success -> state.tarifas.firstOrNull {
+                it.active &&
+                    it.sedeOrigenId == origenIdSeleccionado &&
+                    it.sedeDestinoId == destinoIdSeleccionado
+            }
+            else -> null
         }
 
-        var factorTipo = 1.0
-        if (tipoEnvio == "Sobre") factorTipo = 0.8
+        if (tarifa == null) return null
 
-        return (tarifaBase + excedente) * factorTipo
+        val pesoIncluido = 20.0
+        return tarifa.precioBase +
+            if (pesoNum > pesoIncluido) {
+                (pesoNum - pesoIncluido) * tarifa.precioKgExcedente
+            } else {
+                0.0
+            }
     }
 
 
@@ -295,9 +315,10 @@ fun CalculadoraCostoScreen(
                     ) {
                         sedesDisponibles.forEach { sede ->
                             DropdownMenuItem(
-                                text = { ScaledText(sede, fontSize = 14f) },
+                                text = { ScaledText(sede.name, fontSize = 14f) },
                                 onClick = {
-                                    origenSeleccionado = sede
+                                    origenSeleccionado = sede.name
+                                    origenIdSeleccionado = sede.id
                                     origenExpandido = false
                                     mensajeError = ""
                                 }
@@ -332,9 +353,10 @@ fun CalculadoraCostoScreen(
                     ) {
                         sedesDisponibles.forEach { sede ->
                             DropdownMenuItem(
-                                text = { ScaledText(sede, fontSize = 14f) },
+                                text = { ScaledText(sede.name, fontSize = 14f) },
                                 onClick = {
-                                    destinoSeleccionado = sede
+                                    destinoSeleccionado = sede.name
+                                    destinoIdSeleccionado = sede.id
                                     destinoExpandido = false
                                     mensajeError = ""
                                 }
@@ -404,8 +426,13 @@ fun CalculadoraCostoScreen(
                     mensajeError = "El origen y destino no pueden ser iguales"
                 } else {
                     mensajeError = ""
-                    costoCalculado = calcularCosto()
-                    mostrarResultado = true
+                    val costo = calcularCosto()
+                    if (costo == null) {
+                        mensajeError = "No existe una tarifa activa para esta ruta"
+                    } else {
+                        costoCalculado = costo
+                        mostrarResultado = true
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),

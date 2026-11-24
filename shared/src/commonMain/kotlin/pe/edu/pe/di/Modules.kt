@@ -30,6 +30,7 @@ import pe.edu.pe.domain.UseCase.GetRemoteNotificationsUseCase
 import pe.edu.pe.domain.UseCase.GetUnreadNotificationsCountUseCase
 import pe.edu.pe.domain.UseCase.GetSedesUseCase
 import pe.edu.pe.domain.UseCase.GetTarifasUseCase
+import pe.edu.pe.domain.UseCase.GetTotalEncomiendasUseCase
 import pe.edu.pe.domain.UseCase.LoginUseCase
 import pe.edu.pe.domain.UseCase.MarkAllRemoteNotificationsAsReadUseCase
 import pe.edu.pe.domain.UseCase.MarkRemoteNotificationAsReadUseCase
@@ -70,6 +71,7 @@ import pe.edu.pe.presentation.viewmodel.NotificationSettingsViewModel
 import pe.edu.pe.presentation.viewmodel.PersonaViewModel
 import pe.edu.pe.presentation.viewmodel.RutaViewModel
 import pe.edu.pe.presentation.viewmodel.RemoteNotificationsViewModel
+import pe.edu.pe.presentation.viewmodel.ReceptionViewModel
 import pe.edu.pe.presentation.viewmodel.SedeViewModel
 import pe.edu.pe.presentation.viewmodel.TarifaViewModel
 import pe.edu.pe.presentation.viewmodel.TrackingViewModel
@@ -476,6 +478,18 @@ val appModule = module {
             get()
         )
 
+    }
+
+    factory {
+        GetTotalEncomiendasUseCase(
+            repository = get()
+        )
+    }
+
+    factory {
+        ReceptionViewModel(
+            get()
+        )
     }
 
     factory {

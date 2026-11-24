@@ -36,8 +36,9 @@ class EntregaRecepcionUseCase(
         }
 
 
+        // Validar que el DNI contenga exactamente 8 dígitos numéricos.
         if (
-            dni.length != 8
+            dni.length != 8 || dni.any { it !in '0'..'9' }
         ) {
 
             return Result.failure(

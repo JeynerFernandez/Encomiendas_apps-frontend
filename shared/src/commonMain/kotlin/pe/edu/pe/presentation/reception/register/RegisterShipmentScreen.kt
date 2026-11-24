@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
+import kotlin.math.floor
 import kotlin.math.roundToLong
 import org.koin.compose.viewmodel.koinViewModel
 import pe.edu.pe.presentation.theme.*
@@ -146,6 +148,116 @@ fun RegisterShipmentScreen(
         }
 
 
+    // Valores numéricos normalizados para reutilizar la misma validación
+    // en la cotización y en el registro.
+    val alto =
+        state.height
+            .toDoubleOrNull()
+
+    val ancho =
+        state.width
+            .toDoubleOrNull()
+
+    val largo =
+        state.length
+            .toDoubleOrNull()
+
+    val peso =
+        state.weight
+            .toDoubleOrNull()
+
+    val dimensionesValidas =
+        alto != null &&
+                alto > 0 &&
+                ancho != null &&
+                ancho > 0 &&
+                largo != null &&
+                largo > 0
+
+    val pesoValido =
+        peso != null &&
+                peso > 0
+
+    val dimensionesYPesoValidos =
+        dimensionesValidas &&
+                pesoValido
+
+    val cotizacionVigente =
+        state.calculatedCost != null
+
+    val formularioListoParaRegistrar =
+        !state.isLoading &&
+                state.senderId != null &&
+                state.recipientId != null &&
+                state.senderId != state.recipientId &&
+                state.paymentMethod.isNotBlank() &&
+                state.originBranchId != null &&
+                state.destinationBranchId != null &&
+                state.originBranchId != state.destinationBranchId &&
+                dimensionesYPesoValidos &&
+                cotizacionVigente
+
+    val requisitosPendientes =
+        buildList {
+            if (state.senderId == null) {
+                add("Valida el DNI del remitente.")
+            }
+
+            if (state.recipientId == null) {
+                add("Valida el DNI del destinatario.")
+            }
+
+            if (
+                state.senderId != null &&
+                state.recipientId != null &&
+                state.senderId == state.recipientId
+            ) {
+                add(
+                    "El remitente y destinatario deben ser diferentes."
+                )
+            }
+
+            if (state.paymentMethod.isBlank()) {
+                add("Selecciona una modalidad de pago.")
+            }
+
+            if (state.originBranchId == null) {
+                add("No se ha identificado la sede de origen.")
+            }
+
+            if (state.destinationBranchId == null) {
+                add("Selecciona una sede de destino.")
+            }
+
+            if (
+                state.originBranchId != null &&
+                state.destinationBranchId != null &&
+                state.originBranchId == state.destinationBranchId
+            ) {
+                add(
+                    "La sede de destino debe ser diferente de la sede de origen."
+                )
+            }
+
+            if (!dimensionesValidas) {
+                add(
+                    "Completa correctamente las dimensiones de la encomienda."
+                )
+            }
+
+            if (!pesoValido) {
+                add("Ingresa un peso válido mayor que cero.")
+            }
+
+            if (
+                dimensionesYPesoValidos &&
+                state.calculatedCost == null
+            ) {
+                add("Calcula el costo de la encomienda.")
+            }
+        }
+
+
     // Asigna automáticamente la sede del recepcionista
     LaunchedEffect(
         recepcionSedeId,
@@ -190,23 +302,6 @@ fun RegisterShipmentScreen(
 
         val destinationId =
             state.destinationBranchId
-
-        val alto =
-            state.height
-                .toDoubleOrNull()
-
-        val ancho =
-            state.width
-                .toDoubleOrNull()
-
-        val largo =
-            state.length
-                .toDoubleOrNull()
-
-        val peso =
-            state.weight
-                .toDoubleOrNull()
-
 
         if (
             originId == null
@@ -311,7 +406,7 @@ fun RegisterShipmentScreen(
             20.0
 
 
-        val costo =
+        val costoSinRedondear =
             if (
                 peso <=
                 pesoIncluido
@@ -328,6 +423,14 @@ fun RegisterShipmentScreen(
                                 ) *
                         tarifa.precioKgExcedente
             }
+
+        // Política local explícita: redondeo decimal a dos posiciones,
+        // mitad hacia arriba para costos no negativos. El backend continúa
+        // siendo la autoridad final del costo registrado.
+        val costo =
+            redondearADosDecimales(
+                costoSinRedondear
+            )
 
 
         state =
@@ -1389,7 +1492,6 @@ fun RegisterShipmentScreen(
             }
         }
 
-
         Spacer(
             modifier =
                 Modifier.height(
@@ -1651,23 +1753,6 @@ fun RegisterShipmentScreen(
                     state.destinationBranchId
 
 
-                val alto =
-                    state.height
-                        .toDoubleOrNull()
-
-                val ancho =
-                    state.width
-                        .toDoubleOrNull()
-
-                val largo =
-                    state.length
-                        .toDoubleOrNull()
-
-                val peso =
-                    state.weight
-                        .toDoubleOrNull()
-
-
                 when {
 
                     senderId == null -> {
@@ -1887,8 +1972,7 @@ fun RegisterShipmentScreen(
             },
 
             enabled =
-                !state.isLoading &&
-                        state.calculatedCost != null,
+                formularioListoParaRegistrar,
 
             modifier =
                 Modifier
@@ -1940,6 +2024,54 @@ fun RegisterShipmentScreen(
                     fontWeight =
                         FontWeight.Bold
                 )
+            }
+        }
+
+
+        if (
+            !state.isLoading &&
+            requisitosPendientes.isNotEmpty()
+        ) {
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
+
+            Column(
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                requisitosPendientes.forEach { requisito ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Outlined.Warning,
+                            contentDescription =
+                                "Requisito pendiente",
+                            tint = Orange,
+                            modifier =
+                                Modifier.size(18.dp)
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
+
+                        Text(
+                            text = requisito,
+                            color = Muted,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
             }
         }
 
@@ -2180,4 +2312,15 @@ private fun formatoPrecio(
 
 
     return "$entero.$decimal"
+}
+
+
+private fun redondearADosDecimales(
+    valor: Double
+): Double {
+    val escala = 100.0
+
+    return floor(
+        valor * escala + 0.5
+    ) / escala
 }

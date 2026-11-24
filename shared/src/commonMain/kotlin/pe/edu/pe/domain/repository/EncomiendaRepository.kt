@@ -5,6 +5,8 @@ import pe.edu.pe.domain.model.RegistroEncomienda
 
 interface EncomiendaRepository {
 
+    suspend fun obtenerTotalEncomiendas(): Result<Int>
+
     suspend fun registrarEncomienda(
 
         remitenteId: Int,
